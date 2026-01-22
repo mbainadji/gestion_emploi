@@ -1,6 +1,16 @@
 <?php
 // config.php - Configuration and DB connection (MySQL version)
 
+// Dev: afficher les erreurs pour diagnostiquer les 500 en local
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Vérifier que l'extension PDO MySQL est présente
+if (!extension_loaded('pdo_mysql')) {
+    die("Extension pdo_mysql manquante. Installez et activez l'extension PDO MySQL.\n");
+}
+
 $host = 'localhost';
 $db   = 'timetable';
 $user = 'succes';
@@ -24,7 +34,10 @@ try {
 session_start();
 
 // Define base URL dynamically
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+// Determine protocol reliably even if some $_SERVER keys are missing
+$https = $_SERVER['HTTPS'] ?? '';
+$server_port = $_SERVER['SERVER_PORT'] ?? '';
+$protocol = ((($https !== '') && $https !== 'off') || ($server_port == 443)) ? "https://" : "http://";
 $domainName = $_SERVER['HTTP_HOST'] ?? 'localhost';
 // Determine the app root directory relative to the document root
 // This file is in /timetable_app/includes/config.php
@@ -39,6 +52,11 @@ if ($app_root_index !== false) {
 } else {
     // Fallback if we are not in modules or index (e.g. root index)
     $base_dir = '/timetable_app'; 
+}
+
+// If base_dir computed is empty (e.g. script at /index.php) ensure we point to the app folder
+if (empty($base_dir) || $base_dir === '') {
+    $base_dir = '/timetable_app';
 }
 
 $base_url = $protocol . $domainName . rtrim($base_dir, '/');
