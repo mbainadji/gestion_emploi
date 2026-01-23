@@ -16,17 +16,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($stmt->fetch()) {
         $error = "Ce nom d'utilisateur est déjà pris.";
     } else {
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare("INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$username, $hashed_password, $role, $full_name]);
-        $user_id = $pdo->lastInsertId();
+        try {
+            $pdo->beginTransaction();
 
-        if ($role === 'teacher') {
-            $stmt = $pdo->prepare("INSERT INTO teachers (user_id, name) VALUES (?, ?)");
-            $stmt->execute([$user_id, $full_name]);
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$username, $hashed_password, $role, $full_name]);
+            $user_id = $pdo->lastInsertId();
+
+            if ($role === 'teacher') {
+                // Assuming department_id 1 for now, this should be part of the form later
+                $stmt = $pdo->prepare("INSERT INTO teachers (user_id, name, department_id) VALUES (?, ?, ?)");
+                $stmt->execute([$user_id, $full_name, 1]);
+            }
+
+            $pdo->commit();
+            $message = "Compte créé avec succès ! Vous pouvez maintenant vous connecter.";
+
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            $error = "Erreur lors de la création du compte : " . $e->getMessage();
         }
-
-        $message = "Compte créé avec succès ! Vous pouvez maintenant vous connecter.";
     }
 }
 

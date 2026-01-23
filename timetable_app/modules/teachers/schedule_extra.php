@@ -11,12 +11,15 @@ $message = '';
 $error = '';
 
 if (isset($_POST['add_session'])) {
-    $course_id = $_POST['course_id'];
     $room_id = $_POST['room_id'];
     $slot_id = $_POST['slot_id'];
     $type = $_POST['type']; // TD, TP, Rattrapage
     $date_passage = $_POST['date_passage'];
-    $class_id = $_POST['class_id'];
+    
+    // Parse course_class value
+    $parts = explode(':', $_POST['course_class']);
+    $course_id = $parts[0];
+    $class_id = $parts[1];
     $semester_id = 1;
 
     // Conflict Check
@@ -51,7 +54,7 @@ require_once __DIR__ . '/../../includes/header.php';
     <form method="POST">
         <div>
             <label>UE & Classe</label>
-            <select name="course_class" onchange="const parts = this.value.split(':'); document.getElementById('course_id').value = parts[0]; document.getElementById('class_id').value = parts[1];">
+            <select name="course_class" required>
                 <option value="">-- Sélectionner --</option>
                 <?php foreach ($assigned_courses as $ac): ?>
                     <option value="<?php echo $ac['course_id'] . ':' . $ac['class_id']; ?>">
@@ -59,8 +62,6 @@ require_once __DIR__ . '/../../includes/header.php';
                     </option>
                 <?php endforeach; ?>
             </select>
-            <input type="hidden" name="course_id" id="course_id">
-            <input type="hidden" name="class_id" id="class_id">
         </div>
         <div>
             <label>Type de session</label>
