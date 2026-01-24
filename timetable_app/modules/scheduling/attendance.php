@@ -18,6 +18,15 @@ if ($role === 'teacher' && isset($_POST['mark_teacher_present'])) {
     $tid = $_POST['timetable_id'];
     $stmt = $pdo->prepare("INSERT INTO teacher_attendance (timetable_id, date, status) VALUES (?, ?, 'present') ON DUPLICATE KEY UPDATE status='present', signed_at=CURRENT_TIMESTAMP");
     $stmt->execute([$tid, $date]);
+    
+    // Notify admin of teacher check-in
+    $admin_id_stmt = $pdo->query("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+    $admin_id = $admin_id_stmt->fetchColumn();
+    if ($admin_id) {
+        $notif_msg = "L'enseignant " . $_SESSION['full_name'] . " a signé sa présence pour le cours du " . date('d/m/Y', strtotime($date)) . ".";
+        $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)")->execute([$admin_id, $notif_msg]);
+    }
+
     $message = "Votre présence a été enregistrée.";
 }
 
@@ -57,8 +66,22 @@ if (isset($_POST['save_attendance'])) {
         $stmt->execute([$session_id, $date]);
         
         $stmt = $pdo->prepare("INSERT INTO attendance (timetable_id, student_id, status, date) VALUES (?, ?, ?, ?)");
+        $notif_stmt = $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)");
+        
         foreach ($statuses as $student_id => $status) {
             $stmt->execute([$session_id, $student_id, $status, $date]);
+            
+            // Notify student if absent or late
+            if ($status === 'absent' || $status === 'late') {
+                $student_user_stmt = $pdo->prepare("SELECT user_id FROM students WHERE id = ?");
+                $student_user_stmt->execute([$student_id]);
+                $student_user_id = $student_user_stmt->fetchColumn();
+                
+                if ($student_user_id) {
+                    $msg = "Alerte Émargement : Vous avez été marqué " . ($status === 'absent' ? 'ABSENT' : 'EN RETARD') . " le " . date('d/m/Y', strtotime($date)) . ".";
+                    $notif_stmt->execute([$student_user_id, $msg]);
+                }
+            }
         }
         $pdo->commit();
         $message = "Émargement enregistré avec succès.";

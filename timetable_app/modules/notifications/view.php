@@ -188,10 +188,21 @@ function deleteNotification(id) {
     .then(data => {
         if (data.success) {
             const item = document.getElementById('notif-' + id);
-            item.remove();
             
-            // Si la liste devient vide, on pourrait recharger pour afficher "Aucune notification"
-            // ou simplement laisser tel quel.
+            // Decrement badge if deleting an unread notification
+            if (item.classList.contains('unread')) {
+                const badge = document.querySelector('.nav-links .badge');
+                if (badge) {
+                    let count = parseInt(badge.textContent);
+                    if (count > 1) {
+                        badge.textContent = count - 1;
+                    } else {
+                        badge.remove();
+                    }
+                }
+            }
+            
+            item.remove();
         }
     })
     .catch(error => console.error('Error:', error));

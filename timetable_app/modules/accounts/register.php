@@ -54,36 +54,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 
-<div class="card" style="max-width: 600px; margin: 2rem auto;">
-    <h2>Inscription</h2>
-    <?php if ($error): ?><p style="color: red;"><?php echo $error; ?></p><?php endif; ?>
-    <?php if ($message): ?><p style="color: green;"><?php echo $message; ?></p><?php endif; ?>
+<div class="card" style="max-width: 700px; margin: 3rem auto; padding: 3rem;">
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+        <h2 style="font-size: 2rem; font-weight: 800; color: var(--text);">Rejoignez la Plateforme</h2>
+        <p style="color: var(--text-muted);">Créez votre compte pour commencer la planification</p>
+    </div>
+
+    <?php if ($error): ?>
+        <div style="background: #fef2f2; color: var(--danger); padding: 1rem; border-radius: var(--radius); margin-bottom: 1.5rem; border: 1px solid #fee2e2;">
+            <?php echo $error; ?>
+        </div>
+    <?php endif; ?>
     
-    <form method="POST" id="registerForm">
-        <div class="form-group">
-            <label>Nom complet</label>
-            <input type="text" name="full_name" class="form-control" required>
+    <?php if ($message): ?>
+        <div style="background: #ecfdf5; color: var(--success); padding: 1rem; border-radius: var(--radius); margin-bottom: 1.5rem; border: 1px solid #d1fae5;">
+            <?php echo $message; ?>
         </div>
-        <div class="form-group">
-            <label>Nom d'utilisateur</label>
-            <input type="text" name="username" class="form-control" required>
-        </div>
-        <div class="form-group">
-            <label>Mot de passe</label>
-            <input type="password" name="password" class="form-control" required>
-        </div>
-        <div class="form-group">
-            <label>Je suis un :</label>
-            <select name="role" id="roleSelect" class="form-control" onchange="toggleFields()">
-                <option value="student">Étudiant</option>
-                <option value="teacher">Enseignant</option>
-            </select>
+    <?php endif; ?>
+    
+    <form method="POST" id="registerForm" class="grid-form">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div class="form-group">
+                <label>Nom complet</label>
+                <input type="text" name="full_name" placeholder="Ex: Jean Dupont" required>
+            </div>
+            <div class="form-group">
+                <label>Nom d'utilisateur</label>
+                <input type="text" name="username" placeholder="jdupont" required>
+            </div>
         </div>
 
-        <div id="common-fields">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" name="password" placeholder="••••••••" required>
+            </div>
+            <div class="form-group">
+                <label>Type de profil</label>
+                <select name="role" id="roleSelect" onchange="toggleFields()">
+                    <option value="student">Étudiant</option>
+                    <option value="teacher">Enseignant</option>
+                </select>
+            </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border); margin: 2rem 0;">
+
+        <div id="common-fields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
             <div class="form-group">
                 <label>Département</label>
-                <select name="department_id" id="deptSelect" class="form-control" required onchange="loadPrograms(this.value)">
+                <select name="department_id" id="deptSelect" required onchange="loadPrograms(this.value)">
                     <option value="">-- Choisir --</option>
                     <?php foreach ($departments as $d): ?>
                         <option value="<?php echo $d['id']; ?>"><?php echo htmlspecialchars($d['name']); ?></option>
@@ -92,25 +112,25 @@ require_once __DIR__ . '/../../includes/header.php';
             </div>
             <div class="form-group">
                 <label>Filière</label>
-                <select name="program_id" id="progSelect" class="form-control" required onchange="loadClasses(this.value)">
+                <select name="program_id" id="progSelect" required onchange="loadClasses(this.value)">
                     <option value="">-- Choisir --</option>
                 </select>
             </div>
         </div>
 
-        <div id="student-fields">
+        <div id="student-fields" style="margin-top: 1rem;">
             <div class="form-group">
                 <label>Niveau / Classe</label>
-                <select name="class_id" id="classSelect" class="form-control">
+                <select name="class_id" id="classSelect">
                     <option value="">-- Choisir --</option>
                 </select>
             </div>
         </div>
 
-        <div id="teacher-fields" style="display:none;">
+        <div id="teacher-fields" style="display:none; margin-top: 1rem;">
             <div class="form-group">
-                <label>Salle</label>
-                <select name="room_id" class="form-control">
+                <label>Salle de bureau (Optionnel)</label>
+                <select name="room_id">
                     <option value="">-- Choisir --</option>
                     <?php foreach ($rooms as $r): ?>
                         <option value="<?php echo $r['id']; ?>"><?php echo htmlspecialchars($r['name']); ?></option>
@@ -119,9 +139,12 @@ require_once __DIR__ . '/../../includes/header.php';
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">S'inscrire</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; margin-top: 2rem; font-size: 1.1rem;">Créer mon compte</button>
     </form>
-    <p>Déjà un compte ? <a href="login.php">Connectez-vous ici</a>.</p>
+    
+    <div style="margin-top: 2rem; text-align: center; font-size: 0.95rem; color: var(--text-muted);">
+        Vous avez déjà un compte ? <a href="login.php" style="color: var(--primary); font-weight: 600; text-decoration: none;">Connectez-vous</a>
+    </div>
 </div>
 
 <script>

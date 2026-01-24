@@ -67,6 +67,28 @@ if (isset($_POST['add_entry'])) {
                     // Log history
                     logHistory($_SESSION['user_id'], 'CREATE', 'timetable', $last_id, null, "Class:$class_id, UE:$course_id");
                     
+                    // --- NOTIFICATIONS ---
+                    // Notify Teacher if added by Admin
+                    if ($role === 'admin') {
+                        $teacher_user_stmt = $pdo->prepare("SELECT user_id FROM teachers WHERE id = ?");
+                        $teacher_user_stmt->execute([$teacher_id]);
+                        $teacher_user_id = $teacher_user_stmt->fetchColumn();
+                        if ($teacher_user_id) {
+                            $notif_msg = "Un nouveau cours a été ajouté à votre emploi du temps par l'administrateur.";
+                            $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)")->execute([$teacher_user_id, $notif_msg]);
+                        }
+                    }
+
+                    // Notify Students
+                    $students_stmt = $pdo->prepare("SELECT user_id FROM students WHERE class_id = ?");
+                    $students_stmt->execute([$class_id]);
+                    $students = $students_stmt->fetchAll();
+                    foreach ($students as $student) {
+                        $student_msg = "Nouvelle mise à jour de votre emploi du temps. Consultez le planning.";
+                        $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)")->execute([$student['user_id'], $student_msg]);
+                    }
+                    // ----------------------
+
                     $pdo->commit();
                     $message = "Plage horaire ajoutée avec succès.";
                 } catch (Exception $e) {
@@ -93,11 +115,38 @@ if (isset($_POST['delete_id'])) {
             }
         }
 
+        // Get session details for notifications
+        $session_stmt = $pdo->prepare("SELECT class_id, teacher_id FROM timetable WHERE id = ?");
+        $session_stmt->execute([$delete_id]);
+        $session_info = $session_stmt->fetch();
+
         $stmt = $pdo->prepare("DELETE FROM timetable WHERE id = ?");
         $stmt->execute([$delete_id]);
         
         logHistory($_SESSION['user_id'], 'DELETE', 'timetable', $delete_id, "Entry deleted", null);
         
+        // --- NOTIFICATIONS ---
+        if ($session_info) {
+            // Notify Teacher
+            $teacher_user_stmt = $pdo->prepare("SELECT user_id FROM teachers WHERE id = ?");
+            $teacher_user_stmt->execute([$session_info['teacher_id']]);
+            $teacher_user_id = $teacher_user_stmt->fetchColumn();
+            if ($teacher_user_id && $teacher_user_id != $user_id) {
+                $notif_msg = "Un cours a été supprimé de votre emploi du temps.";
+                $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)")->execute([$teacher_user_id, $notif_msg]);
+            }
+
+            // Notify Students
+            $students_stmt = $pdo->prepare("SELECT user_id FROM students WHERE class_id = ?");
+            $students_stmt->execute([$session_info['class_id']]);
+            $students = $students_stmt->fetchAll();
+            foreach ($students as $student) {
+                $student_msg = "Un cours a été supprimé de votre emploi du temps. Veuillez vérifier le planning.";
+                $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)")->execute([$student['user_id'], $student_msg]);
+            }
+        }
+        // ----------------------
+
         $pdo->commit();
         $message = "Entrée supprimée.";
     } catch (Exception $e) {
