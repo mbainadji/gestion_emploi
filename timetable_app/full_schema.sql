@@ -452,33 +452,7 @@ CREATE TABLE `timetable` (
 /*!50003 SET collation_connection  = utf8mb4_uca1400_ai_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
-DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`succes`@`localhost`*/ /*!50003 TRIGGER trg_timetable_after_delete
-AFTER DELETE ON timetable
-FOR EACH ROW
-BEGIN
-    INSERT INTO deleted_records_log (table_name, original_id, data)
-    VALUES ('timetable', OLD.id, JSON_OBJECT(
-        'class_id', OLD.class_id,
-        'course_id', OLD.course_id,
-        'teacher_id', OLD.teacher_id,
-        'room_id', OLD.room_id,
-        'slot_id', OLD.slot_id,
-        'type', OLD.type,
-        'date_passage', OLD.date_passage
-    ));
-END */;;
-DELIMITER ;
-/*!50003 SET sql_mode              = @saved_sql_mode */ ;
-/*!50003 SET character_set_client  = @saved_cs_client */ ;
-/*!50003 SET character_set_results = @saved_cs_results */ ;
-/*!50003 SET collation_connection  = @saved_col_connection */ ;
-
---
--- Table structure for table `users`
---
-
-DROP TABLE IF EXISTS `users`;
+-- Trigger supprimé pour compatibilité hébergement mutualisé
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `users` (
@@ -544,9 +518,7 @@ SET character_set_client = @saved_cs_client;
 /*!50001 SET character_set_client      = utf8mb4 */;
 /*!50001 SET character_set_results     = utf8mb4 */;
 /*!50001 SET collation_connection      = utf8mb4_uca1400_ai_ci */;
-/*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`succes`@`localhost` SQL SECURITY DEFINER */
-/*!50001 VIEW `v_teacher_workload` AS select `tc`.`id` AS `teacher_id`,`tc`.`name` AS `teacher_name`,count(`t`.`id`) AS `total_sessions`,sum(case when `t`.`type` = 'CM' then 1.5 else 1 end) AS `estimated_hours` from (`teachers` `tc` left join `timetable` `t` on(`tc`.`id` = `t`.`teacher_id`)) group by `tc`.`id`,`tc`.`name` */;
+/*!50001 CREATE VIEW `v_teacher_workload` AS select `tc`.`id` AS `teacher_id`,`tc`.`name` AS `teacher_name`,count(`t`.`id`) AS `total_sessions`,sum(case when `t`.`type` = 'CM' then 1.5 else 1 end) AS `estimated_hours` from (`teachers` `tc` left join `timetable` `t` on(`tc`.`id` = `t`.`teacher_id`)) group by `tc`.`id`,`tc`.`name` */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
@@ -562,9 +534,7 @@ SET character_set_client = @saved_cs_client;
 /*!50001 SET character_set_client      = utf8mb4 */;
 /*!50001 SET character_set_results     = utf8mb4 */;
 /*!50001 SET collation_connection      = utf8mb4_uca1400_ai_ci */;
-/*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`succes`@`localhost` SQL SECURITY DEFINER */
-/*!50001 VIEW `v_timetable_details` AS select `t`.`id` AS `session_id`,`c`.`title` AS `course_title`,`c`.`code` AS `course_code`,`cl`.`name` AS `class_name`,`tc`.`name` AS `teacher_name`,`r`.`name` AS `room_name`,`s`.`day` AS `day`,`s`.`start_time` AS `start_time`,`s`.`end_time` AS `end_time`,`t`.`type` AS `session_type`,`t`.`week_number` AS `week_number`,`t`.`date_passage` AS `date_passage` from (((((`timetable` `t` join `courses` `c` on(`t`.`course_id` = `c`.`id`)) join `classes` `cl` on(`t`.`class_id` = `cl`.`id`)) join `teachers` `tc` on(`t`.`teacher_id` = `tc`.`id`)) join `rooms` `r` on(`t`.`room_id` = `r`.`id`)) join `slots` `s` on(`t`.`slot_id` = `s`.`id`)) */;
+/*!50001 CREATE VIEW `v_timetable_details` AS select `t`.`id` AS `session_id`,`c`.`title` AS `course_title`,`c`.`code` AS `course_code`,`cl`.`name` AS `class_name`,`tc`.`name` AS `teacher_name`,`r`.`name` AS `room_name`,`s`.`day` AS `day`,`s`.`start_time` AS `start_time`,`s`.`end_time` AS `end_time`,`t`.`type` AS `session_type`,`t`.`week_number` AS `week_number`,`t`.`date_passage` AS `date_passage` from (((((`timetable` `t` join `courses` `c` on(`t`.`course_id` = `c`.`id`)) join `classes` `cl` on(`t`.`class_id` = `cl`.`id`)) join `teachers` `tc` on(`t`.`teacher_id` = `tc`.`id`)) join `rooms` `r` on(`t`.`room_id` = `r`.`id`)) join `slots` `s` on(`t`.`slot_id` = `s`.`id`)) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;

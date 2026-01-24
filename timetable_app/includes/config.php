@@ -14,7 +14,17 @@ if (!extension_loaded('pdo_mysql')) {
 $host = 'localhost';
 $db   = 'timetable';
 $user = 'succes';
-$pass = 'succes123';
+$pass = 'succes237';
+
+// Détection automatique de l'environnement pour InfinityFree
+if ($_SERVER['SERVER_NAME'] !== 'localhost' && $_SERVER['SERVER_ADDR'] !== '127.0.0.1') {
+    // Ces valeurs devront être mises à jour avec vos vrais identifiants InfinityFree
+    $host = 'sqlXXX.epizy.com'; 
+    $db   = 'epiz_XXX_timetable';
+    $user = 'epiz_XXX';
+    $pass = 'votre_mot_de_passe_vpanel';
+}
+
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
