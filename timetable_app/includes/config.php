@@ -18,11 +18,11 @@ $pass = 'succes237';
 
 // Détection automatique de l'environnement pour InfinityFree
 if ($_SERVER['SERVER_NAME'] !== 'localhost' && $_SERVER['SERVER_ADDR'] !== '127.0.0.1') {
-    // Ces valeurs devront être mises à jour avec vos vrais identifiants InfinityFree
-    $host = 'sqlXXX.epizy.com'; 
-    $db   = 'epiz_XXX_timetable';
-    $user = 'epiz_XXX';
-    $pass = 'votre_mot_de_passe_vpanel';
+    // Ces valeurs sont maintenant à jour avec vos identifiants réels InfinityFree
+    $host = 'sql104.infinityfree.com'; 
+    $db   = 'if0_40984463_timetable';
+    $user = 'if0_40984463';
+    $pass = 'dVSQbzZhZePjQO'; 
 }
 
 $charset = 'utf8mb4';
