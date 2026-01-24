@@ -113,19 +113,29 @@ require_once __DIR__ . '/../../includes/header.php';
     </table>
 
     <h3>Ajouter une Classe</h3>
-    <form method="POST">
+    <form method="POST" id="addClassForm">
         <input type="hidden" name="add_class" value="1">
         <div>
-            <label>Nom de la classe (ex: ICT-L2)</label>
-            <input type="text" name="name" required>
-        </div>
-        <div>
             <label>Filière</label>
-            <select name="program_id">
+            <select name="program_id" id="program_id">
                 <?php foreach ($programs as $p): ?>
-                    <option value="<?php echo $p['id']; ?>"><?php echo $p['name']; ?></option>
+                    <option value="<?php echo $p['id']; ?>" data-name="<?php echo $p['name']; ?>"><?php echo $p['name']; ?></option>
                 <?php endforeach; ?>
             </select>
+        </div>
+        <div>
+            <label>Niveau</label>
+            <select id="level_select">
+                <option value="L1">L1</option>
+                <option value="L2">L2</option>
+                <option value="L3">L3</option>
+                <option value="M1">M1</option>
+                <option value="M2">M2</option>
+            </select>
+        </div>
+        <div>
+            <label>Nom de la classe (Généré automatiquement)</label>
+            <input type="text" name="name" id="class_name" required>
         </div>
         <div>
             <label>Semestre</label>
@@ -137,11 +147,37 @@ require_once __DIR__ . '/../../includes/header.php';
         </div>
         <div>
             <label>Effectif</label>
-            <input type="number" name="size" required>
+            <input type="number" name="size" required value="100">
         </div>
         <button type="submit" class="btn btn-success">Ajouter</button>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const programSelect = document.getElementById('program_id');
+    const levelSelect = document.getElementById('level_select');
+    const nameInput = document.getElementById('class_name');
+
+    function updateClassName() {
+        const selectedOption = programSelect.options[programSelect.selectedIndex];
+        const programName = selectedOption.getAttribute('data-name');
+        const level = levelSelect.value;
+        
+        if (programName === 'ICT4D') {
+            nameInput.value = 'ICT4D-' + level;
+        } else {
+            nameInput.value = level;
+        }
+    }
+
+    programSelect.addEventListener('change', updateClassName);
+    levelSelect.addEventListener('change', updateClassName);
+    
+    // Initial call
+    updateClassName();
+});
+</script>
 
 <div class="card">
     <h3>Départements & Filières</h3>

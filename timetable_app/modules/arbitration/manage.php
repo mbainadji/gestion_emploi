@@ -20,7 +20,8 @@ $sql_room = "
     JOIN slots s ON t1.slot_id = s.id
     JOIN courses c1 ON t1.course_id = c1.id
     JOIN courses c2 ON t2.course_id = c2.id
-    WHERE (t1.week_number IS NULL OR t2.week_number IS NULL OR t1.week_number = t2.week_number)
+    WHERE t1.semester_id = $semester_id 
+      AND (t1.week_number IS NULL OR t2.week_number IS NULL OR t1.week_number = t2.week_number)
 ";
 $stmt = $pdo->query($sql_room);
 while ($row = $stmt->fetch()) {
@@ -44,7 +45,8 @@ $sql_teacher = "
     JOIN slots s ON t1.slot_id = s.id
     JOIN courses c1 ON t1.course_id = c1.id
     JOIN courses c2 ON t2.course_id = c2.id
-    WHERE (t1.week_number IS NULL OR t2.week_number IS NULL OR t1.week_number = t2.week_number)
+    WHERE t1.semester_id = $semester_id 
+      AND (t1.week_number IS NULL OR t2.week_number IS NULL OR t1.week_number = t2.week_number)
 ";
 $stmt = $pdo->query($sql_teacher);
 while ($row = $stmt->fetch()) {
@@ -72,7 +74,8 @@ $sql_class = "
     JOIN slots s ON t1.slot_id = s.id
     JOIN courses c1 ON t1.course_id = c1.id
     JOIN courses c2 ON t2.course_id = c2.id
-    WHERE (t1.week_number IS NULL OR t2.week_number IS NULL OR t1.week_number = t2.week_number)
+    WHERE t1.semester_id = $semester_id 
+      AND (t1.week_number IS NULL OR t2.week_number IS NULL OR t1.week_number = t2.week_number)
       AND (
           (t1.group_name = t2.group_name) OR 
           (t1.group_name IS NULL OR t1.group_name = '') OR 

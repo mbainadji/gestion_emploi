@@ -37,13 +37,13 @@ if (isLoggedIn()) {
             <?php if (isLoggedIn()): ?>
                 <li><a href="<?php echo BASE_URL; ?>/modules/views/view.php">Planning</a></li>
                 <?php if (hasRole('admin')): ?>
-                    <li><a href="<?php echo BASE_URL; ?>/modules/academics/manage.php">Académique</a></li>
-                    <li><a href="<?php echo BASE_URL; ?>/modules/teachers/manage.php">Enseignants</a></li>
-                    <li><a href="<?php echo BASE_URL; ?>/modules/rooms/manage.php">Salles</a></li>
+                    <li><a href="<?php echo BASE_URL; ?>/modules/academics/departments_view.php">Départements</a></li>
                     <li><a href="<?php echo BASE_URL; ?>/modules/scheduling/manage.php">Planification</a></li>
+                    <li><a href="<?php echo BASE_URL; ?>/modules/scheduling/attendance.php">Émargement</a></li>
+                    <li><a href="<?php echo BASE_URL; ?>/modules/reports/stats.php">Statistiques</a></li>
                 <?php elseif (hasRole('teacher')): ?>
-                    <li><a href="<?php echo BASE_URL; ?>/modules/preferences/submit.php">Désidératas</a></li>
-                    <li><a href="<?php echo BASE_URL; ?>/modules/teachers/schedule_extra.php">TD/TP</a></li>
+                    <li><a href="<?php echo BASE_URL; ?>/modules/scheduling/manage.php">Mes Cours</a></li>
+                    <li><a href="<?php echo BASE_URL; ?>/modules/scheduling/attendance.php">Émargement</a></li>
                 <?php endif; ?>
                 <li>
                     <a href="<?php echo BASE_URL; ?>/modules/notifications/view.php" style="position: relative;">
@@ -53,6 +53,7 @@ if (isLoggedIn()) {
                         <?php endif; ?>
                     </a>
                 </li>
+                <li><a href="<?php echo BASE_URL; ?>/modules/accounts/profile.php">Mon Profil</a></li>
                 <li><a href="<?php echo BASE_URL; ?>/modules/accounts/logout.php" class="btn btn-secondary" style="color: white; padding: 0.4rem 0.8rem;">Déconnexion</a></li>
             <?php else: ?>
                 <li><a href="<?php echo BASE_URL; ?>/modules/accounts/login.php" class="btn btn-primary" style="color: white;">Connexion</a></li>

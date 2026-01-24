@@ -38,8 +38,22 @@ if (isset($_GET['delete'])) {
     }
 }
 
-// Récupération de la liste des salles
-$rooms = $pdo->query("SELECT * FROM rooms ORDER BY name ASC")->fetchAll();
+// Traitement du formulaire d'ajout d'équipement
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_equipment') {
+    $room_id = (int)$_POST['room_id'];
+    $equipment_name = trim($_POST['equipment_name']);
+    $quantity = (int)$_POST['quantity'];
+
+    if ($room_id > 0 && !empty($equipment_name) && $quantity > 0) {
+        $stmt = $pdo->prepare("INSERT INTO room_equipment (room_id, equipment_name, quantity) VALUES (?, ?, ?)");
+        if ($stmt->execute([$room_id, $equipment_name, $quantity])) {
+            $message = "Équipement ajouté avec succès !";
+        }
+    }
+}
+
+// Récupération de la liste des salles avec leurs équipements
+$rooms = $pdo->query("SELECT r.*, (SELECT GROUP_CONCAT(equipment_name || ' (' || quantity || ')') FROM room_equipment WHERE room_id = r.id) as equipment FROM rooms r ORDER BY name ASC")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -100,6 +114,7 @@ $rooms = $pdo->query("SELECT * FROM rooms ORDER BY name ASC")->fetchAll();
                     <th>ID</th>
                     <th>Nom</th>
                     <th>Capacité</th>
+                    <th>Équipements</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -109,6 +124,18 @@ $rooms = $pdo->query("SELECT * FROM rooms ORDER BY name ASC")->fetchAll();
                     <td><?php echo $room['id']; ?></td>
                     <td><strong><?php echo htmlspecialchars($room['name']); ?></strong></td>
                     <td><?php echo $room['capacity']; ?> places</td>
+                    <td>
+                        <div style="font-size: 0.85rem; color: #666; margin-bottom: 5px;">
+                            <?php echo $room['equipment'] ? htmlspecialchars($room['equipment']) : 'Aucun équipement'; ?>
+                        </div>
+                        <form method="POST" style="display: flex; gap: 5px;">
+                            <input type="hidden" name="action" value="add_equipment">
+                            <input type="hidden" name="room_id" value="<?php echo $room['id']; ?>">
+                            <input type="text" name="equipment_name" placeholder="Équipement" required style="padding: 2px 5px; font-size: 0.8rem; width: 80px;">
+                            <input type="number" name="quantity" value="1" min="1" required style="padding: 2px 5px; font-size: 0.8rem; width: 40px;">
+                            <button type="submit" style="padding: 2px 8px; font-size: 0.75rem;">+</button>
+                        </form>
+                    </td>
                     <td class="actions">
                         <!-- Lien de suppression avec confirmation JS -->
                         <a href="?delete=<?php echo $room['id']; ?>" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette salle ?');">Supprimer</a>
