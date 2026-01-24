@@ -14,7 +14,7 @@ if (!extension_loaded('pdo_mysql')) {
 $host = 'localhost';
 $db   = 'timetable';
 $user = 'succes';
-$pass = 'succes237';
+$pass = 'succes123';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
