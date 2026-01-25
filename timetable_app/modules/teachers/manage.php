@@ -45,7 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $stmt = $pdo->prepare("UPDATE teachers SET name = ?, department_id = ?, program_id = ? WHERE id = ?");
                 $stmt->execute([$name, $department_id, $program_id, $id]);
                 
-                $uid = $pdo->query("SELECT user_id FROM teachers WHERE id = $id")->fetchColumn();
+                $stmt_uid = $pdo->prepare("SELECT user_id FROM teachers WHERE id = ?");
+                $stmt_uid->execute([$id]);
+                $uid = $stmt_uid->fetchColumn();
                 if ($uid) {
                     $stmt = $pdo->prepare("UPDATE users SET full_name = ? WHERE id = ?");
                     $stmt->execute([$name, $uid]);

@@ -11,20 +11,21 @@ if (!extension_loaded('pdo_mysql')) {
     die("Extension pdo_mysql manquante. Installez et activez l'extension PDO MySQL.\n");
 }
 
-$host = getenv('DB_HOST') ?: 'localhost';
+// --- Configuration de la base de données ---
+// Il est FORTEMENT recommandé d'utiliser des variables d'environnement pour la configuration.
+// Ne mettez jamais de mots de passe en clair dans ce fichier.
+// Créez un fichier .env à la racine de votre projet et chargez-le (par exemple avec docker-compose).
+//
+// Exemple de contenu pour un fichier .env :
+// DB_HOST=localhost
+// DB_NAME=timetable
+// DB_USER=succes
+// DB_PASS=succes237
+
+$host = getenv('DB_HOST') ?: 'localhost'; // 'db' si vous utilisez le docker-compose ci-dessous
 $db   = getenv('DB_NAME') ?: 'timetable';
-$user = getenv('DB_USER') ?: 'succes';
-$pass = getenv('DB_PASS') ?: 'succes237';
-
-// Détection automatique de l'environnement pour InfinityFree
-if ($_SERVER['SERVER_NAME'] !== 'localhost' && $_SERVER['SERVER_ADDR'] !== '127.0.0.1') {
-    // Ces valeurs sont maintenant à jour avec vos identifiants réels InfinityFree
-    $host = 'sql104.infinityfree.com'; 
-    $db   = 'if0_40984463_timetable';
-    $user = 'if0_40984463';
-    $pass = 'dVSQbzZhZePjQO'; 
-}
-
+$user = getenv('DB_USER') ?: 'root';
+$pass = getenv('DB_PASS') ?: 'password';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
@@ -43,6 +44,9 @@ try {
 
 session_start();
 
+// --- Définition de l'URL de base ---
+// La détection automatique peut être fragile.
+// Pour une meilleure portabilité, vous pouvez aussi la définir via une variable d'environnement.
 // Define base URL dynamically
 // Determine protocol reliably even if some $_SERVER keys are missing
 $https = $_SERVER['HTTPS'] ?? '';

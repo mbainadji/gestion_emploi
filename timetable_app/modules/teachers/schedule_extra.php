@@ -11,27 +11,61 @@ $message = '';
 $error = '';
 
 if (isset($_POST['add_session'])) {
-    $room_id = $_POST['room_id'];
-    $slot_id = $_POST['slot_id'];
+    $room_id = (int)$_POST['room_id'];
+    $slot_id = (int)$_POST['slot_id'];
     $type = $_POST['type']; // TD, TP, Rattrapage
     $date_passage = $_POST['date_passage'];
     
     // Parse course_class value
     $parts = explode(':', $_POST['course_class']);
-    $course_id = $parts[0];
-    $class_id = $parts[1];
-    $semester_id = 1;
+    $course_id = (int)$parts[0];
+    $class_id = (int)$parts[1];
+    $semester_id = 1; // TODO: Devrait être dynamique, basé sur le cours
 
-    // Conflict Check
-    $stmt = $pdo->prepare("SELECT * FROM timetable WHERE slot_id = ? AND (room_id = ? OR teacher_id = ? OR class_id = ?) AND semester_id = ?");
-    $stmt->execute([$slot_id, $room_id, $teacher_id, $class_id, $semester_id]);
-    
-    if ($stmt->fetch()) {
-        $error = "Conflit détecté : La salle, vous-même ou la classe est déjà occupé sur ce créneau.";
+    // --- FIX: Vérification de conflit robuste ---
+    // Récupérer les détails du créneau (jour, heure de début/fin)
+    $slot_stmt = $pdo->prepare("SELECT day, start_time, end_time FROM slots WHERE id = ?");
+    $slot_stmt->execute([$slot_id]);
+    $slot = $slot_stmt->fetch();
+
+    if (!$slot) {
+        $error = "Créneau horaire invalide.";
     } else {
+        // Vérifie s'il y a un conflit avec une autre session (ponctuelle ou récurrente)
+        $conflict_stmt = $pdo->prepare("
+            SELECT t.id
+            FROM timetable t
+            JOIN slots s ON t.slot_id = s.id
+            WHERE
+                (t.teacher_id = :teacher_id OR t.room_id = :room_id OR t.class_id = :class_id)
+                AND s.start_time < :end_time AND s.end_time > :start_time -- Vérifie le chevauchement des heures
+                AND (
+                    -- Conflit avec une session ponctuelle (même date)
+                    t.date_passage = :date_passage
+                    OR
+                    -- Conflit avec une session récurrente (même jour de la semaine)
+                    (t.date_passage IS NULL AND s.day = :day_name)
+                )
+            LIMIT 1
+        ");
+
+        $conflict_stmt->execute([
+            ':teacher_id' => $teacher_id,
+            ':room_id' => $room_id,
+            ':class_id' => $class_id,
+            ':start_time' => $slot['start_time'],
+            ':end_time' => $slot['end_time'],
+            ':date_passage' => $date_passage,
+            ':day_name' => $slot['day']
+        ]);
+
+        if ($conflict_stmt->fetch()) {
+            $error = "Conflit détecté : La salle, vous-même ou la classe est déjà occupé sur ce créneau.";
+        } else {
         $stmt = $pdo->prepare("INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, type, date_passage) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([$class_id, $course_id, $teacher_id, $room_id, $slot_id, $semester_id, $type, $date_passage]);
         $message = "Session programmée avec succès.";
+        }
     }
 }
 

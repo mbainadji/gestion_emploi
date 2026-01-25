@@ -20,11 +20,12 @@ $sql_room = "
     JOIN slots s ON t1.slot_id = s.id
     JOIN courses c1 ON t1.course_id = c1.id
     JOIN courses c2 ON t2.course_id = c2.id
-    WHERE t1.semester_id = $semester_id 
+    WHERE t1.semester_id = ?
       AND (t1.week_number IS NULL OR t2.week_number IS NULL OR t1.week_number = t2.week_number)
 ";
-$stmt = $pdo->query($sql_room);
-while ($row = $stmt->fetch()) {
+$stmt_room = $pdo->prepare($sql_room);
+$stmt_room->execute([$semester_id]);
+while ($row = $stmt_room->fetch()) {
     $conflicts[] = [
         'type' => 'Salle',
         'entity' => $row['room_name'],
@@ -45,11 +46,12 @@ $sql_teacher = "
     JOIN slots s ON t1.slot_id = s.id
     JOIN courses c1 ON t1.course_id = c1.id
     JOIN courses c2 ON t2.course_id = c2.id
-    WHERE t1.semester_id = $semester_id 
+    WHERE t1.semester_id = ?
       AND (t1.week_number IS NULL OR t2.week_number IS NULL OR t1.week_number = t2.week_number)
 ";
-$stmt = $pdo->query($sql_teacher);
-while ($row = $stmt->fetch()) {
+$stmt_teacher = $pdo->prepare($sql_teacher);
+$stmt_teacher->execute([$semester_id]);
+while ($row = $stmt_teacher->fetch()) {
     $conflicts[] = [
         'type' => 'Enseignant',
         'entity' => $row['teacher_name'],
@@ -74,7 +76,7 @@ $sql_class = "
     JOIN slots s ON t1.slot_id = s.id
     JOIN courses c1 ON t1.course_id = c1.id
     JOIN courses c2 ON t2.course_id = c2.id
-    WHERE t1.semester_id = $semester_id 
+    WHERE t1.semester_id = ?
       AND (t1.week_number IS NULL OR t2.week_number IS NULL OR t1.week_number = t2.week_number)
       AND (
           (t1.group_name = t2.group_name) OR 
@@ -82,8 +84,9 @@ $sql_class = "
           (t2.group_name IS NULL OR t2.group_name = '')
       )
 ";
-$stmt = $pdo->query($sql_class);
-while ($row = $stmt->fetch()) {
+$stmt_class = $pdo->prepare($sql_class);
+$stmt_class->execute([$semester_id]);
+while ($row = $stmt_class->fetch()) {
     $g1 = $row['g1'] ? $row['g1'] : 'Classe Entière';
     $g2 = $row['g2'] ? $row['g2'] : 'Classe Entière';
     $conflicts[] = [
