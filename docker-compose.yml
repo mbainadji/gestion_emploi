@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  db:
+    image: mariadb:10.11
+    container_name: timetable_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: timetable
+      MYSQL_USER: succes
+      MYSQL_PASSWORD: succes237
+      MYSQL_ROOT_PASSWORD: root_password
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./timetable_app/full_schema.sql:/docker-entrypoint-initdb.d/init.sql
+
+  web:
+    build: .
+    container_name: timetable_app
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_NAME=timetable
+      - DB_USER=succes
+      - DB_PASS=succes237
+
+volumes:
+  db_data:
