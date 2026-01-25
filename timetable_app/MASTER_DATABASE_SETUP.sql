@@ -452,23 +452,6 @@ CREATE TABLE `timetable` (
 /*!50003 SET collation_connection  = utf8mb4_uca1400_ai_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
-DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`succes`@`localhost`*/ /*!50003 TRIGGER trg_timetable_after_delete
-AFTER DELETE ON timetable
-FOR EACH ROW
-BEGIN
-    INSERT INTO deleted_records_log (table_name, original_id, data)
-    VALUES ('timetable', OLD.id, JSON_OBJECT(
-        'class_id', OLD.class_id,
-        'course_id', OLD.course_id,
-        'teacher_id', OLD.teacher_id,
-        'room_id', OLD.room_id,
-        'slot_id', OLD.slot_id,
-        'type', OLD.type,
-        'date_passage', OLD.date_passage
-    ));
-END */;;
-DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
@@ -505,68 +488,3 @@ CREATE TABLE `users` (
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
-
--- Dump completed on 2026-01-24 12:33:54
--- Database Improvements: Views, Triggers, Transactions and Backup Logic
-
--- 1. RECYCLE BIN FOR DELETED RECORDS
-CREATE TABLE IF NOT EXISTS deleted_records_log (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    table_name VARCHAR(100),
-    original_id INT,
-    data JSON,
-    deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_by INT
-);
-
--- 3. TRIGGERS
--- Trigger to log deletion in timetable
-DELIMITER //
-CREATE TRIGGER trg_timetable_after_delete
-AFTER DELETE ON timetable
-FOR EACH ROW
-BEGIN
-    INSERT INTO deleted_records_log (table_name, original_id, data)
-    VALUES ('timetable', OLD.id, JSON_OBJECT(
-        'class_id', OLD.class_id,
-        'course_id', OLD.course_id,
-        'teacher_id', OLD.teacher_id,
-        'room_id', OLD.room_id,
-        'slot_id', OLD.slot_id,
-        'type', OLD.type,
-        'date_passage', OLD.date_passage
-    ));
-END //
-DELIMITER ;
-
--- 4. STORED PROCEDURES FOR BACKUP & RECOVERY
-DELIMITER //
-
--- Procedure to backup a specific table
-CREATE PROCEDURE sp_backup_table(IN source_table VARCHAR(100))
-BEGIN
-    SET @backup_name = CONCAT('backup_', source_table, '_', DATE_FORMAT(NOW(), '%Y%m%d_%H%i%s'));
-    SET @query = CONCAT('CREATE TABLE ', @backup_name, ' SELECT * FROM ', source_table);
-    PREPARE stmt FROM @query;
-    EXECUTE stmt;
-    DEALLOCATE PREPARE stmt;
-END //
-
--- Procedure to recover a table from a backup (example usage)
--- CALL sp_restore_table('timetable', 'backup_timetable_20231027_120000');
-CREATE PROCEDURE sp_restore_table(IN target_table VARCHAR(100), IN backup_table VARCHAR(100))
-BEGIN
-    -- Drop target if exists (careful!)
-    SET @query1 = CONCAT('DROP TABLE IF EXISTS ', target_table);
-    PREPARE stmt1 FROM @query1;
-    EXECUTE stmt1;
-    DEALLOCATE PREPARE stmt1;
-    
-    -- Restore from backup
-    SET @query2 = CONCAT('CREATE TABLE ', target_table, ' SELECT * FROM ', backup_table);
-    PREPARE stmt2 FROM @query2;
-    EXECUTE stmt2;
-    DEALLOCATE PREPARE stmt2;
-END //
-
-DELIMITER ;
