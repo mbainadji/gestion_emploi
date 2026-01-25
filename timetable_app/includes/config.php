@@ -24,8 +24,8 @@ if (!extension_loaded('pdo_mysql')) {
 
 $host = getenv('DB_HOST') ?: 'localhost'; // 'db' si vous utilisez le docker-compose ci-dessous
 $db   = getenv('DB_NAME') ?: 'timetable';
-$user = getenv('DB_USER') ?: 'root';
-$pass = getenv('DB_PASS') ?: 'password';
+$user = getenv('DB_USER') ?: 'succes';
+$pass = getenv('DB_PASS') ?: 'succes237';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
