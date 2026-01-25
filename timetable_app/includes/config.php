@@ -11,10 +11,10 @@ if (!extension_loaded('pdo_mysql')) {
     die("Extension pdo_mysql manquante. Installez et activez l'extension PDO MySQL.\n");
 }
 
-$host = 'localhost';
-$db   = 'timetable';
-$user = 'succes';
-$pass = 'succes237';
+$host = getenv('DB_HOST') ?: 'localhost';
+$db   = getenv('DB_NAME') ?: 'timetable';
+$user = getenv('DB_USER') ?: 'succes';
+$pass = getenv('DB_PASS') ?: 'succes237';
 
 // Détection automatique de l'environnement pour InfinityFree
 if ($_SERVER['SERVER_NAME'] !== 'localhost' && $_SERVER['SERVER_ADDR'] !== '127.0.0.1') {
