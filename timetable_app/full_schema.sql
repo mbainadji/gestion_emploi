@@ -4,6 +4,7 @@
 -- Host: localhost    Database: timetable
 -- ------------------------------------------------------
 -- Server version	11.8.5-MariaDB-3 from Debian
+-- VERSION NETTOYÉE POUR HÉBERGEMENT MUTUALISÉ (sans VIEWs ni TRIGGERs)
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -444,15 +445,12 @@ CREATE TABLE `timetable` (
   CONSTRAINT `timetable_ibfk_6` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
-/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
-/*!50003 SET @saved_col_connection = @@collation_connection */ ;
-/*!50003 SET character_set_client  = utf8mb4 */ ;
-/*!50003 SET character_set_results = utf8mb4 */ ;
-/*!50003 SET collation_connection  = utf8mb4_uca1400_ai_ci */ ;
-/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
--- Trigger supprimé pour compatibilité hébergement mutualisé
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS `users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `users` (
@@ -469,75 +467,6 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Temporary table structure for view `v_teacher_workload`
---
-
-DROP TABLE IF EXISTS `v_teacher_workload`;
-/*!50001 DROP VIEW IF EXISTS `v_teacher_workload`*/;
-SET @saved_cs_client     = @@character_set_client;
-SET character_set_client = utf8mb4;
-/*!50001 CREATE VIEW `v_teacher_workload` AS SELECT
- 1 AS `teacher_id`,
-  1 AS `teacher_name`,
-  1 AS `total_sessions`,
-  1 AS `estimated_hours` */;
-SET character_set_client = @saved_cs_client;
-
---
--- Temporary table structure for view `v_timetable_details`
---
-
-DROP TABLE IF EXISTS `v_timetable_details`;
-/*!50001 DROP VIEW IF EXISTS `v_timetable_details`*/;
-SET @saved_cs_client     = @@character_set_client;
-SET character_set_client = utf8mb4;
-/*!50001 CREATE VIEW `v_timetable_details` AS SELECT
- 1 AS `session_id`,
-  1 AS `course_title`,
-  1 AS `course_code`,
-  1 AS `class_name`,
-  1 AS `teacher_name`,
-  1 AS `room_name`,
-  1 AS `day`,
-  1 AS `start_time`,
-  1 AS `end_time`,
-  1 AS `session_type`,
-  1 AS `week_number`,
-  1 AS `date_passage` */;
-SET character_set_client = @saved_cs_client;
-
---
--- Final view structure for view `v_teacher_workload`
---
-
-/*!50001 DROP VIEW IF EXISTS `v_teacher_workload`*/;
-/*!50001 SET @saved_cs_client          = @@character_set_client */;
-/*!50001 SET @saved_cs_results         = @@character_set_results */;
-/*!50001 SET @saved_col_connection     = @@collation_connection */;
-/*!50001 SET character_set_client      = utf8mb4 */;
-/*!50001 SET character_set_results     = utf8mb4 */;
-/*!50001 SET collation_connection      = utf8mb4_uca1400_ai_ci */;
-/*!50001 CREATE VIEW `v_teacher_workload` AS select `tc`.`id` AS `teacher_id`,`tc`.`name` AS `teacher_name`,count(`t`.`id`) AS `total_sessions`,sum(case when `t`.`type` = 'CM' then 1.5 else 1 end) AS `estimated_hours` from (`teachers` `tc` left join `timetable` `t` on(`tc`.`id` = `t`.`teacher_id`)) group by `tc`.`id`,`tc`.`name` */;
-/*!50001 SET character_set_client      = @saved_cs_client */;
-/*!50001 SET character_set_results     = @saved_cs_results */;
-/*!50001 SET collation_connection      = @saved_col_connection */;
-
---
--- Final view structure for view `v_timetable_details`
---
-
-/*!50001 DROP VIEW IF EXISTS `v_timetable_details`*/;
-/*!50001 SET @saved_cs_client          = @@character_set_client */;
-/*!50001 SET @saved_cs_results         = @@character_set_results */;
-/*!50001 SET @saved_col_connection     = @@collation_connection */;
-/*!50001 SET character_set_client      = utf8mb4 */;
-/*!50001 SET character_set_results     = utf8mb4 */;
-/*!50001 SET collation_connection      = utf8mb4_uca1400_ai_ci */;
-/*!50001 CREATE VIEW `v_timetable_details` AS select `t`.`id` AS `session_id`,`c`.`title` AS `course_title`,`c`.`code` AS `course_code`,`cl`.`name` AS `class_name`,`tc`.`name` AS `teacher_name`,`r`.`name` AS `room_name`,`s`.`day` AS `day`,`s`.`start_time` AS `start_time`,`s`.`end_time` AS `end_time`,`t`.`type` AS `session_type`,`t`.`week_number` AS `week_number`,`t`.`date_passage` AS `date_passage` from (((((`timetable` `t` join `courses` `c` on(`t`.`course_id` = `c`.`id`)) join `classes` `cl` on(`t`.`class_id` = `cl`.`id`)) join `teachers` `tc` on(`t`.`teacher_id` = `tc`.`id`)) join `rooms` `r` on(`t`.`room_id` = `r`.`id`)) join `slots` `s` on(`t`.`slot_id` = `s`.`id`)) */;
-/*!50001 SET character_set_client      = @saved_cs_client */;
-/*!50001 SET character_set_results     = @saved_cs_results */;
-/*!50001 SET collation_connection      = @saved_col_connection */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -549,3 +478,39 @@ SET character_set_client = @saved_cs_client;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
 -- Dump completed on 2026-01-24 12:33:54
+
+-- ============================================================
+-- REQUÊTES DE REMPLACEMENT POUR LES VIEWs SUPPRIMÉES
+-- ============================================================
+-- Utilisez ces requêtes dans votre code PHP au lieu des VIEWs
+
+-- Remplace: SELECT * FROM v_teacher_workload
+-- SELECT 
+--     tc.id AS teacher_id,
+--     tc.name AS teacher_name,
+--     COUNT(t.id) AS total_sessions,
+--     SUM(CASE WHEN t.type = 'CM' THEN 1.5 ELSE 1 END) AS estimated_hours
+-- FROM teachers tc
+-- LEFT JOIN timetable t ON tc.id = t.teacher_id
+-- GROUP BY tc.id, tc.name;
+
+-- Remplace: SELECT * FROM v_timetable_details
+-- SELECT 
+--     t.id AS session_id,
+--     c.title AS course_title,
+--     c.code AS course_code,
+--     cl.name AS class_name,
+--     tc.name AS teacher_name,
+--     r.name AS room_name,
+--     s.day AS day,
+--     s.start_time AS start_time,
+--     s.end_time AS end_time,
+--     t.type AS session_type,
+--     t.week_number AS week_number,
+--     t.date_passage AS date_passage
+-- FROM timetable t
+-- JOIN courses c ON t.course_id = c.id
+-- JOIN classes cl ON t.class_id = cl.id
+-- JOIN teachers tc ON t.teacher_id = tc.id
+-- JOIN rooms r ON t.room_id = r.id
+-- JOIN slots s ON t.slot_id = s.id;
