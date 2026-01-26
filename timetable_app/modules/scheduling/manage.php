@@ -159,6 +159,19 @@ if (isset($_POST['delete_id'])) {
 $filter_class = $_GET['class_id'] ?? '';
 $filter_teacher = $_GET['teacher_id'] ?? '';
 
+// Pre-fill department and program for filters if class_id is provided
+$prefill_dept = '';
+$prefill_prog = '';
+if ($filter_class) {
+    $stmt = $pdo->prepare("SELECT p.id as prog_id, p.department_id FROM classes c JOIN programs p ON c.program_id = p.id WHERE c.id = ?");
+    $stmt->execute([$filter_class]);
+    $pre = $stmt->fetch();
+    if ($pre) {
+        $prefill_prog = $pre['prog_id'];
+        $prefill_dept = $pre['department_id'];
+    }
+}
+
 // If teacher, they only see their own schedule by default or restricted
 if ($role === 'teacher') {
     $filter_teacher = $current_teacher_id;
@@ -183,6 +196,8 @@ $stmt->execute($params);
 $timetable = $stmt->fetchAll();
 
 $classes = $pdo->query("SELECT * FROM classes ORDER BY name")->fetchAll();
+$departments = $pdo->query("SELECT * FROM departments ORDER BY name")->fetchAll();
+$programs = $pdo->query("SELECT * FROM programs ORDER BY name")->fetchAll();
 $courses = $pdo->query("SELECT * FROM courses ORDER BY code")->fetchAll();
 $teachers = $pdo->query("SELECT * FROM teachers ORDER BY name")->fetchAll();
 $rooms = $pdo->query("SELECT * FROM rooms ORDER BY name")->fetchAll();
@@ -253,35 +268,100 @@ require_once __DIR__ . '/../../includes/header.php';
     </table>
 </div>
 
-<div class="card">
+<div class="card" style="margin-top: 2rem;">
     <h3>Ajouter une programmation</h3>
     <form method="POST">
         <input type="hidden" name="add_entry" value="1">
-        <div class="form-group"><label>Type de session</label>
-            <select name="type" class="form-control" required>
-                <option value="Cours">Cours Magistral</option>
-                <option value="TD">Travaux Dirigés (TD)</option>
-                <option value="TP">Travaux Pratiques (TP)</option>
-            </select>
-        </div>
-        <div class="form-group"><label>Classe</label><select name="class_id" class="form-control" required><?php foreach($classes as $c) echo "<option value='{$c['id']}'>{$c['name']}</option>"; ?></select></div>
-        <div class="form-group"><label>Groupe</label><input type="text" name="group_name" class="form-control" placeholder="G1, G2 ou laisse vide"></div>
-        <div class="form-group"><label>Semaine</label><input type="number" name="week_number" class="form-control" placeholder="Numéro de semaine (optionnel)"></div>
-        <div class="form-group"><label>UE</label><select name="course_id" class="form-control" required><?php foreach($courses as $c) echo "<option value='{$c['id']}'>{$c['code']} - {$c['title']}</option>"; ?></select></div>
         
-        <?php if ($role === 'admin'): ?>
-            <div class="form-group"><label>Enseignant</label><select name="teacher_id" class="form-control" required><?php foreach($teachers as $t) echo "<option value='{$t['id']}'>{$t['name']}</option>"; ?></select></div>
-        <?php else: ?>
-            <input type="hidden" name="teacher_id" value="<?php echo $current_teacher_id; ?>">
-            <div class="form-group"><label>Enseignant</label><input type="text" class="form-control" value="<?php echo htmlspecialchars($_SESSION['full_name']); ?>" disabled></div>
-        <?php endif; ?>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group"><label>Département</label>
+                <select id="admin_dept" class="form-control" onchange="filterPrograms(this.value)">
+                    <option value="">-- Tous les départements --</option>
+                    <?php foreach($departments as $d) echo "<option value='{$d['id']}' ".($prefill_dept == $d['id'] ? 'selected' : '').">{$d['name']}</option>"; ?>
+                </select>
+            </div>
+            <div class="form-group"><label>Filière (Program)</label>
+                <select id="admin_prog" class="form-control" onchange="filterClasses(this.value)">
+                    <option value="">-- Toutes les filières --</option>
+                    <?php foreach($programs as $p) echo "<option value='{$p['id']}' data-dept='{$p['department_id']}' ".($prefill_prog == $p['id'] ? 'selected' : '').">{$p['name']}</option>"; ?>
+                </select>
+            </div>
+            <div class="form-group"><label>Classe / Niveau</label>
+                <select name="class_id" id="admin_class" class="form-control" required>
+                    <option value="">-- Choisir la classe --</option>
+                    <?php foreach($classes as $c) echo "<option value='{$c['id']}' data-prog='{$c['program_id']}' ".($filter_class == $c['id'] ? 'selected' : '').">{$c['name']}</option>"; ?>
+                </select>
+            </div>
+            <div class="form-group"><label>Type de session</label>
+                <select name="type" class="form-control" required>
+                    <option value="Cours">Cours Magistral</option>
+                    <option value="TD">Travaux Dirigés (TD)</option>
+                    <option value="TP">Travaux Pratiques (TP)</option>
+                </select>
+            </div>
+        </div>
 
-        <div class="form-group"><label>Salle</label><select name="room_id" class="form-control" required><?php foreach($rooms as $r) echo "<option value='{$r['id']}'>{$r['name']} (Cap: {$r['capacity']})</option>"; ?></select></div>
-        <div class="form-group"><label>Date</label><input type="date" name="date_passage" class="form-control"></div>
-        <div class="form-group"><label>Créneau</label><select name="slot_id" class="form-control" required><?php foreach($slots as $s) echo "<option value='{$s['id']}'>{$s['day']} {$s['start_time']}-{$s['end_time']}</option>"; ?></select></div>
-        <button type="submit" class="btn btn-success" style="margin-top: 1rem;">Programmer</button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+            <div class="form-group"><label>Groupe</label><input type="text" name="group_name" class="form-control" placeholder="G1, G2 ou laisse vide"></div>
+            <div class="form-group"><label>Semaine</label><input type="number" name="week_number" class="form-control" placeholder="Numéro de semaine (optionnel)"></div>
+            <div class="form-group"><label>UE (Cours)</label><select name="course_id" class="form-control" required><?php foreach($courses as $c) echo "<option value='{$c['id']}'>{$c['code']} - {$c['title']}</option>"; ?></select></div>
+            
+            <?php if ($role === 'admin'): ?>
+                <div class="form-group"><label>Enseignant</label><select name="teacher_id" class="form-control" required><?php foreach($teachers as $t) echo "<option value='{$t['id']}'>{$t['name']}</option>"; ?></select></div>
+            <?php else: ?>
+                <input type="hidden" name="teacher_id" value="<?php echo $current_teacher_id; ?>">
+                <div class="form-group"><label>Enseignant</label><input type="text" class="form-control" value="<?php echo htmlspecialchars($_SESSION['full_name']); ?>" disabled></div>
+            <?php endif; ?>
+
+            <div class="form-group"><label>Salle</label><select name="room_id" class="form-control" required><?php foreach($rooms as $r) echo "<option value='{$r['id']}'>{$r['name']} (Cap: {$r['capacity']})</option>"; ?></select></div>
+            <div class="form-group"><label>Date</label><input type="date" name="date_passage" class="form-control"></div>
+            <div class="form-group"><label>Créneau</label><select name="slot_id" class="form-control" required><?php foreach($slots as $s) echo "<option value='{$s['id']}'>{$s['day']} {$s['start_time']}-{$s['end_time']}</option>"; ?></select></div>
+        </div>
+        
+        <button type="submit" class="btn btn-success" style="margin-top: 1.5rem; width: 100%; padding: 0.8rem;">Programmer la session</button>
     </form>
 </div>
+
+<script>
+function filterPrograms(deptId) {
+    const progSelect = document.getElementById('admin_prog');
+    const progs = progSelect.querySelectorAll('option');
+    progSelect.value = '';
+    filterClasses(''); // Reset classes too
+    
+    progs.forEach(opt => {
+        if (!deptId || opt.value === '' || opt.dataset.dept === deptId) {
+            opt.style.display = '';
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+}
+
+function filterClasses(progId) {
+    const classSelect = document.getElementById('admin_class');
+    const classes = classSelect.querySelectorAll('option');
+    // Don't reset if it's the initial load with prefill
+    if (!progId) classSelect.value = '';
+    
+    classes.forEach(opt => {
+        if (!progId || opt.value === '' || opt.dataset.prog === progId) {
+            opt.style.display = '';
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+}
+
+function initFilters() {
+    const deptId = document.getElementById('admin_dept').value;
+    const progId = document.getElementById('admin_prog').value;
+    if (deptId) filterPrograms(deptId);
+    if (progId) filterClasses(progId);
+}
+
+window.onload = initFilters;
+</script>
 
 <?php
 require_once __DIR__ . '/../../includes/footer.php';

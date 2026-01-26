@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $room_id = $_POST['room_id'];
         $reason = $_POST['reason'];
         $type = $_POST['type'] ?? 'Rattrapage';
+        $request_type = $_POST['request_type'] ?? 'catchup';
 
         // Check for room conflict
         $stmt = $pdo->prepare("SELECT * FROM timetable WHERE slot_id = ? AND room_id = ? AND semester_id = 1");
@@ -21,25 +22,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conflict = $stmt->fetch();
 
         if ($conflict) {
-            $error = "La salle est déjà occupée sur ce créneau. Veuillez choisir une autre salle ou en ajouter une nouvelle.";
+            $error = "La salle est déjà occupée sur ce créneau.";
         } else {
-            // If teacher, they can directly schedule TD/TP for their courses
-            if ($role === 'teacher' && ($type === 'TD' || $type === 'TP')) {
+            // If teacher, they can directly schedule TD/TP for their courses if admin allowed (not specified, but keeping existing logic)
+            // But if it's a "proposal" or "catchup" explicitly marked as such, we use the requests table
+            if ($role === 'teacher' && ($type === 'TD' || $type === 'TP') && $request_type === 'catchup') {
                 $stmt = $pdo->prepare("INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, type) VALUES (?, ?, ?, ?, ?, 1, ?)");
                 $stmt->execute([$class_id, $course_id, $teacher_id, $room_id, $slot_id, $type]);
                 $message = "Session de $type programmée avec succès.";
-
-                // --- NOTIFICATION SYSTEM (already implemented) ---
-                $admin_stmt = $pdo->query("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
-                $admin_id = $admin_stmt->fetchColumn();
-                if ($admin_id) {
-                    $notif_msg = "L'enseignant " . $_SESSION['full_name'] . " a programmé une séance de $type.";
-                    $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)")->execute([$admin_id, $notif_msg]);
-                }
             } else {
-                $stmt = $pdo->prepare("INSERT INTO catchup_requests (teacher_id, course_id, class_id, slot_id, room_id, reason) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$teacher_id, $course_id, $class_id, $slot_id, $room_id, $reason]);
-                $message = "Demande de rattrapage envoyée à l'administrateur.";
+                $stmt = $pdo->prepare("INSERT INTO catchup_requests (teacher_id, course_id, class_id, slot_id, room_id, reason, request_type, session_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$teacher_id, $course_id, $class_id, $slot_id, $room_id, $reason, $request_type, $type]);
+                $message = ($request_type === 'proposal' ? "Proposition d'emploi du temps" : "Demande de rattrapage") . " envoyée à l'administrateur.";
             }
         }
     } elseif (isset($_POST['quick_add_room'])) {
@@ -61,8 +55,8 @@ if ($role === 'admin' && isset($_POST['approve_id'])) {
 
     if ($req) {
         // Move to timetable
-        $stmt = $pdo->prepare("INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, type) VALUES (?, ?, ?, ?, ?, 1, 'Rattrapage')");
-        $stmt->execute([$req['class_id'], $req['course_id'], $req['teacher_id'], $req['room_id'], $req['slot_id']]);
+        $stmt = $pdo->prepare("INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, type) VALUES (?, ?, ?, ?, ?, 1, ?)");
+        $stmt->execute([$req['class_id'], $req['course_id'], $req['teacher_id'], $req['room_id'], $req['slot_id'], $req['session_type']]);
         
         $stmt = $pdo->prepare("UPDATE catchup_requests SET status = 'approved' WHERE id = ?");
         $stmt->execute([$id]);
@@ -113,12 +107,12 @@ require_once __DIR__ . '/../../includes/header.php';
 ?>
 
 <div class="card">
-    <h2>Gestion des Rattrapages</h2>
+    <h2>Gestion des Propositions & Rattrapages</h2>
     <?php if (isset($message)): ?><div class="alert alert-success"><?php echo $message; ?></div><?php endif; ?>
 
     <?php if ($role === 'teacher'): ?>
     <div class="card" style="border: 1px solid var(--border); margin-bottom: 2rem;">
-        <h3>Demander un Rattrapage</h3>
+        <h3>Soumettre une Programmation</h3>
         <?php if (isset($error)): ?><div class="alert alert-danger" style="color: red; margin-bottom: 1rem;"><?php echo $error; ?></div><?php endif; ?>
         
         <form method="POST">
@@ -130,11 +124,18 @@ require_once __DIR__ . '/../../includes/header.php';
             <input type="hidden" name="teacher_id" value="<?php echo $tid; ?>">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div class="form-group">
-                    <label>Type de session</label>
+                    <label>Type de demande</label>
+                    <select name="request_type" class="form-control" required>
+                        <option value="proposal">Proposition d'emploi du temps (Cours Normal)</option>
+                        <option value="catchup">Session de Rattrapage</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nature du cours</label>
                     <select name="type" class="form-control" required>
+                        <option value="Cours">Cours Magistral (CM)</option>
                         <option value="TD">Travaux Dirigés (TD)</option>
                         <option value="TP">Travaux Pratiques (TP)</option>
-                        <option value="Rattrapage">Rattrapage (Nécessite approbation)</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -186,10 +187,11 @@ require_once __DIR__ . '/../../includes/header.php';
     </div>
     <?php endif; ?>
 
-    <h3>Demandes de rattrapages</h3>
+    <h3>Demandes en attente</h3>
     <table class="table">
         <thead>
             <tr>
+                <th>Type</th>
                 <th>Enseignant</th>
                 <th>Cours</th>
                 <th>Classe</th>
@@ -201,6 +203,11 @@ require_once __DIR__ . '/../../includes/header.php';
         <tbody>
             <?php foreach($requests as $r): ?>
                 <tr>
+                    <td>
+                        <span class="badge" style="background: <?php echo $r['request_type'] === 'proposal' ? '#007bff' : '#6f42c1'; ?>; color: white;">
+                            <?php echo $r['request_type'] === 'proposal' ? 'Proposition' : 'Rattrapage'; ?>
+                        </span>
+                    </td>
                     <td><?php echo htmlspecialchars($r['teacher_name']); ?></td>
                     <td><?php echo htmlspecialchars($r['course_title']); ?></td>
                     <td><?php echo htmlspecialchars($r['class_name']); ?></td>
