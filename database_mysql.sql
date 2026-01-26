@@ -1,256 +1,1352 @@
+-- BASE DE DONNEES GESTION EMPLOI DU TEMPS --
+-- Fichier généré par fusion le lun. 26 janv. 2026 09:18:22 WAT
 
--- MySQL version of the database schema
+-- Section 1: Schéma de base
+/*M!999999\- enable the sandbox mode */ 
+-- MariaDB dump 10.19-11.8.5-MariaDB, for debian-linux-gnu (x86_64)
+--
+-- Host: localhost    Database: timetable
+-- ------------------------------------------------------
+-- Server version	11.8.5-MariaDB-3 from Debian
 
-SET FOREIGN_KEY_CHECKS = 0;
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*M!100616 SET @OLD_NOTE_VERBOSITY=@@NOTE_VERBOSITY, NOTE_VERBOSITY=0 */;
 
-CREATE TABLE users (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    role VARCHAR(20) NOT NULL,
-    full_name VARCHAR(100)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+--
+-- Table structure for table `academic_years`
+--
 
-CREATE TABLE academic_years (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+DROP TABLE IF EXISTS `academic_years`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `academic_years` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(20) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-CREATE TABLE semesters (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    academic_year_id INT,
-    name VARCHAR(50) NOT NULL,
-    FOREIGN KEY(academic_year_id) REFERENCES academic_years(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+--
+-- Table structure for table `attendance`
+--
 
-CREATE TABLE departments (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+DROP TABLE IF EXISTS `attendance`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `attendance` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `timetable_id` int(11) DEFAULT NULL,
+  `student_id` int(11) DEFAULT NULL,
+  `status` enum('present','absent','late') DEFAULT NULL,
+  `date` date DEFAULT NULL,
+  `marked_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `timetable_id` (`timetable_id`),
+  KEY `student_id` (`student_id`),
+  CONSTRAINT `attendance_ibfk_1` FOREIGN KEY (`timetable_id`) REFERENCES `timetable` (`id`),
+  CONSTRAINT `attendance_ibfk_2` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-CREATE TABLE programs (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    department_id INT,
-    name VARCHAR(100) NOT NULL,
-    FOREIGN KEY(department_id) REFERENCES departments(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+--
+-- Table structure for table `catchup_requests`
+--
 
-CREATE TABLE classes (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    program_id INT,
-    name VARCHAR(50) NOT NULL,
-    size INT,
-    semester_id INT,
-    FOREIGN KEY(program_id) REFERENCES programs(id),
-    FOREIGN KEY(semester_id) REFERENCES semesters(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+DROP TABLE IF EXISTS `catchup_requests`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `catchup_requests` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `teacher_id` int(11) NOT NULL,
+  `course_id` int(11) NOT NULL,
+  `class_id` int(11) NOT NULL,
+  `slot_id` int(11) NOT NULL,
+  `room_id` int(11) NOT NULL,
+  `reason` text DEFAULT NULL,
+  `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `teacher_id` (`teacher_id`),
+  KEY `course_id` (`course_id`),
+  KEY `class_id` (`class_id`),
+  KEY `slot_id` (`slot_id`),
+  KEY `room_id` (`room_id`),
+  CONSTRAINT `catchup_requests_ibfk_1` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`),
+  CONSTRAINT `catchup_requests_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`),
+  CONSTRAINT `catchup_requests_ibfk_3` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`),
+  CONSTRAINT `catchup_requests_ibfk_4` FOREIGN KEY (`slot_id`) REFERENCES `slots` (`id`),
+  CONSTRAINT `catchup_requests_ibfk_5` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-CREATE TABLE teachers (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(100),
-    department_id INT,
-    FOREIGN KEY(user_id) REFERENCES users(id),
-    FOREIGN KEY(department_id) REFERENCES departments(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+--
+-- Table structure for table `classes`
+--
 
-CREATE TABLE courses (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    code VARCHAR(20) NOT NULL,
-    title VARCHAR(200) NOT NULL,
-    program_id INT,
-    FOREIGN KEY(program_id) REFERENCES programs(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+DROP TABLE IF EXISTS `classes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `classes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `program_id` int(11) DEFAULT NULL,
+  `name` varchar(50) NOT NULL,
+  `size` int(11) DEFAULT NULL,
+  `semester_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `program_id` (`program_id`),
+  KEY `semester_id` (`semester_id`),
+  CONSTRAINT `classes_ibfk_1` FOREIGN KEY (`program_id`) REFERENCES `programs` (`id`),
+  CONSTRAINT `classes_ibfk_2` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=97 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-CREATE TABLE teacher_courses (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    teacher_id INT,
-    course_id INT,
+--
+-- Table structure for table `courses`
+--
+
+DROP TABLE IF EXISTS `courses`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `courses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `code` varchar(20) NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `program_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `program_id` (`program_id`),
+  CONSTRAINT `courses_ibfk_1` FOREIGN KEY (`program_id`) REFERENCES `programs` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `deleted_records_log`
+--
+
+DROP TABLE IF EXISTS `deleted_records_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `deleted_records_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `table_name` varchar(100) DEFAULT NULL,
+  `original_id` int(11) DEFAULT NULL,
+  `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`data`)),
+  `deleted_at` timestamp NULL DEFAULT current_timestamp(),
+  `deleted_by` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `departments`
+--
+
+DROP TABLE IF EXISTS `departments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `departments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `desiderata`
+--
+
+DROP TABLE IF EXISTS `desiderata`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `desiderata` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `teacher_id` int(11) DEFAULT NULL,
+  `slot_id` int(11) DEFAULT NULL,
+  `semester_id` int(11) DEFAULT NULL,
+  `is_preferred` tinyint(1) DEFAULT 1,
+  `status` varchar(20) DEFAULT 'submitted',
+  PRIMARY KEY (`id`),
+  KEY `teacher_id` (`teacher_id`),
+  KEY `slot_id` (`slot_id`),
+  KEY `semester_id` (`semester_id`),
+  CONSTRAINT `desiderata_ibfk_1` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`),
+  CONSTRAINT `desiderata_ibfk_2` FOREIGN KEY (`slot_id`) REFERENCES `slots` (`id`),
+  CONSTRAINT `desiderata_ibfk_3` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `history`
+--
+
+DROP TABLE IF EXISTS `history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `action` varchar(50) DEFAULT NULL,
+  `table_name` varchar(50) DEFAULT NULL,
+  `record_id` int(11) DEFAULT NULL,
+  `old_value` text DEFAULT NULL,
+  `new_value` text DEFAULT NULL,
+  `timestamp` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `history_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `notifications`
+--
+
+DROP TABLE IF EXISTS `notifications`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `notifications` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `message` text DEFAULT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `timestamp` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `programs`
+--
+
+DROP TABLE IF EXISTS `programs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `programs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `department_id` int(11) DEFAULT NULL,
+  `name` varchar(100) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `department_id` (`department_id`),
+  CONSTRAINT `programs_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `room_equipment`
+--
+
+DROP TABLE IF EXISTS `room_equipment`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `room_equipment` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `room_id` int(11) NOT NULL,
+  `item_name` varchar(100) NOT NULL,
+  `quantity` int(11) DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `room_id` (`room_id`),
+  CONSTRAINT `room_equipment_ibfk_1` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `rooms`
+--
+
+DROP TABLE IF EXISTS `rooms`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `rooms` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `capacity` int(11) NOT NULL,
+  `is_predefined` tinyint(1) DEFAULT 1,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `semesters`
+--
+
+DROP TABLE IF EXISTS `semesters`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `semesters` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `academic_year_id` int(11) DEFAULT NULL,
+  `name` varchar(50) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `academic_year_id` (`academic_year_id`),
+  CONSTRAINT `semesters_ibfk_1` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `settings`
+--
+
+DROP TABLE IF EXISTS `settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `settings` (
+  `key` varchar(50) NOT NULL,
+  `value` text DEFAULT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `slots`
+--
+
+DROP TABLE IF EXISTS `slots`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `slots` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `day` varchar(20) NOT NULL,
+  `start_time` varchar(10) NOT NULL,
+  `end_time` varchar(10) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `students`
+--
+
+DROP TABLE IF EXISTS `students`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `students` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `department_id` int(11) NOT NULL,
+  `program_id` int(11) NOT NULL,
+  `class_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `department_id` (`department_id`),
+  KEY `program_id` (`program_id`),
+  KEY `class_id` (`class_id`),
+  CONSTRAINT `students_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `students_ibfk_2` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
+  CONSTRAINT `students_ibfk_3` FOREIGN KEY (`program_id`) REFERENCES `programs` (`id`),
+  CONSTRAINT `students_ibfk_4` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `teacher_attendance`
+--
+
+DROP TABLE IF EXISTS `teacher_attendance`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `teacher_attendance` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `timetable_id` int(11) DEFAULT NULL,
+  `date` date DEFAULT NULL,
+  `status` enum('present','absent') DEFAULT 'present',
+  `signed_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_session_date` (`timetable_id`,`date`),
+  CONSTRAINT `teacher_attendance_ibfk_1` FOREIGN KEY (`timetable_id`) REFERENCES `timetable` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `teacher_courses`
+--
+
+DROP TABLE IF EXISTS `teacher_courses`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `teacher_courses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `teacher_id` int(11) DEFAULT NULL,
+  `course_id` int(11) DEFAULT NULL,
+  `class_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `teacher_id` (`teacher_id`),
+  KEY `course_id` (`course_id`),
+  KEY `class_id` (`class_id`),
+  CONSTRAINT `teacher_courses_ibfk_1` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`),
+  CONSTRAINT `teacher_courses_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`),
+  CONSTRAINT `teacher_courses_ibfk_3` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `teachers`
+--
+
+DROP TABLE IF EXISTS `teachers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `teachers` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `name` varchar(100) NOT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `department_id` int(11) DEFAULT NULL,
+  `program_id` int(11) DEFAULT NULL,
+  `room_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `department_id` (`department_id`),
+  KEY `fk_teacher_program` (`program_id`),
+  KEY `fk_teacher_room` (`room_id`),
+  CONSTRAINT `fk_teacher_program` FOREIGN KEY (`program_id`) REFERENCES `programs` (`id`),
+  CONSTRAINT `fk_teacher_room` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`),
+  CONSTRAINT `teachers_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `teachers_ibfk_2` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `timetable`
+--
+
+DROP TABLE IF EXISTS `timetable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `timetable` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `class_id` int(11) DEFAULT NULL,
+  `course_id` int(11) DEFAULT NULL,
+  `teacher_id` int(11) DEFAULT NULL,
+  `room_id` int(11) DEFAULT NULL,
+  `slot_id` int(11) DEFAULT NULL,
+  `semester_id` int(11) DEFAULT NULL,
+  `week_number` int(11) DEFAULT NULL,
+  `date_passage` date DEFAULT NULL,
+  `group_name` varchar(10) DEFAULT NULL,
+  `type` varchar(20) DEFAULT 'CM',
+  PRIMARY KEY (`id`),
+  KEY `class_id` (`class_id`),
+  KEY `course_id` (`course_id`),
+  KEY `teacher_id` (`teacher_id`),
+  KEY `room_id` (`room_id`),
+  KEY `slot_id` (`slot_id`),
+  KEY `semester_id` (`semester_id`),
+  CONSTRAINT `timetable_ibfk_1` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`),
+  CONSTRAINT `timetable_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`),
+  CONSTRAINT `timetable_ibfk_3` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`),
+  CONSTRAINT `timetable_ibfk_4` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`),
+  CONSTRAINT `timetable_ibfk_5` FOREIGN KEY (`slot_id`) REFERENCES `slots` (`id`),
+  CONSTRAINT `timetable_ibfk_6` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_uca1400_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` varchar(20) NOT NULL,
+  `full_name` varchar(100) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `avatar` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`)
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
+
+-- Section 2: Schéma complet et correctifs
+/*M!999999\- enable the sandbox mode */ 
+-- MariaDB dump 10.19-11.8.5-MariaDB, for debian-linux-gnu (x86_64)
+--
+-- Host: localhost    Database: timetable
+-- ------------------------------------------------------
+-- Server version	11.8.5-MariaDB-3 from Debian
+-- VERSION NETTOYÉE POUR HÉBERGEMENT MUTUALISÉ (sans VIEWs ni TRIGGERs)
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*M!100616 SET @OLD_NOTE_VERBOSITY=@@NOTE_VERBOSITY, NOTE_VERBOSITY=0 */;
+
+--
+-- Table structure for table `academic_years`
+--
+
+DROP TABLE IF EXISTS `academic_years`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `academic_years` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(20) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `attendance`
+--
+
+DROP TABLE IF EXISTS `attendance`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `attendance` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `timetable_id` int(11) DEFAULT NULL,
+  `student_id` int(11) DEFAULT NULL,
+  `status` enum('present','absent','late') DEFAULT NULL,
+  `date` date DEFAULT NULL,
+  `marked_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `timetable_id` (`timetable_id`),
+  KEY `student_id` (`student_id`),
+  CONSTRAINT `attendance_ibfk_1` FOREIGN KEY (`timetable_id`) REFERENCES `timetable` (`id`),
+  CONSTRAINT `attendance_ibfk_2` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `catchup_requests`
+--
+
+DROP TABLE IF EXISTS `catchup_requests`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `catchup_requests` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `teacher_id` int(11) NOT NULL,
+  `course_id` int(11) NOT NULL,
+  `class_id` int(11) NOT NULL,
+  `slot_id` int(11) NOT NULL,
+  `room_id` int(11) NOT NULL,
+  `reason` text DEFAULT NULL,
+  `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `teacher_id` (`teacher_id`),
+  KEY `course_id` (`course_id`),
+  KEY `class_id` (`class_id`),
+  KEY `slot_id` (`slot_id`),
+  KEY `room_id` (`room_id`),
+  CONSTRAINT `catchup_requests_ibfk_1` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`),
+  CONSTRAINT `catchup_requests_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`),
+  CONSTRAINT `catchup_requests_ibfk_3` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`),
+  CONSTRAINT `catchup_requests_ibfk_4` FOREIGN KEY (`slot_id`) REFERENCES `slots` (`id`),
+  CONSTRAINT `catchup_requests_ibfk_5` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `classes`
+--
+
+DROP TABLE IF EXISTS `classes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `classes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `program_id` int(11) DEFAULT NULL,
+  `name` varchar(50) NOT NULL,
+  `size` int(11) DEFAULT NULL,
+  `semester_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `program_id` (`program_id`),
+  KEY `semester_id` (`semester_id`),
+  CONSTRAINT `classes_ibfk_1` FOREIGN KEY (`program_id`) REFERENCES `programs` (`id`),
+  CONSTRAINT `classes_ibfk_2` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=97 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `courses`
+--
+
+DROP TABLE IF EXISTS `courses`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `courses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `code` varchar(20) NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `program_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `program_id` (`program_id`),
+  CONSTRAINT `courses_ibfk_1` FOREIGN KEY (`program_id`) REFERENCES `programs` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `deleted_records_log`
+--
+
+DROP TABLE IF EXISTS `deleted_records_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `deleted_records_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `table_name` varchar(100) DEFAULT NULL,
+  `original_id` int(11) DEFAULT NULL,
+  `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`data`)),
+  `deleted_at` timestamp NULL DEFAULT current_timestamp(),
+  `deleted_by` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `departments`
+--
+
+DROP TABLE IF EXISTS `departments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `departments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `desiderata`
+--
+
+DROP TABLE IF EXISTS `desiderata`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `desiderata` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `teacher_id` int(11) DEFAULT NULL,
+  `slot_id` int(11) DEFAULT NULL,
+  `semester_id` int(11) DEFAULT NULL,
+  `is_preferred` tinyint(1) DEFAULT 1,
+  `status` varchar(20) DEFAULT 'submitted',
+  PRIMARY KEY (`id`),
+  KEY `teacher_id` (`teacher_id`),
+  KEY `slot_id` (`slot_id`),
+  KEY `semester_id` (`semester_id`),
+  CONSTRAINT `desiderata_ibfk_1` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`),
+  CONSTRAINT `desiderata_ibfk_2` FOREIGN KEY (`slot_id`) REFERENCES `slots` (`id`),
+  CONSTRAINT `desiderata_ibfk_3` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `history`
+--
+
+DROP TABLE IF EXISTS `history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `action` varchar(50) DEFAULT NULL,
+  `table_name` varchar(50) DEFAULT NULL,
+  `record_id` int(11) DEFAULT NULL,
+  `old_value` text DEFAULT NULL,
+  `new_value` text DEFAULT NULL,
+  `timestamp` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `history_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `notifications`
+--
+
+DROP TABLE IF EXISTS `notifications`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `notifications` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `message` text DEFAULT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `timestamp` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `programs`
+--
+
+DROP TABLE IF EXISTS `programs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `programs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `department_id` int(11) DEFAULT NULL,
+  `name` varchar(100) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `department_id` (`department_id`),
+  CONSTRAINT `programs_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `room_equipment`
+--
+
+DROP TABLE IF EXISTS `room_equipment`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `room_equipment` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `room_id` int(11) NOT NULL,
+  `item_name` varchar(100) NOT NULL,
+  `quantity` int(11) DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `room_id` (`room_id`),
+  CONSTRAINT `room_equipment_ibfk_1` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `rooms`
+--
+
+DROP TABLE IF EXISTS `rooms`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `rooms` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `capacity` int(11) NOT NULL,
+  `is_predefined` tinyint(1) DEFAULT 1,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `semesters`
+--
+
+DROP TABLE IF EXISTS `semesters`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `semesters` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `academic_year_id` int(11) DEFAULT NULL,
+  `name` varchar(50) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `academic_year_id` (`academic_year_id`),
+  CONSTRAINT `semesters_ibfk_1` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `settings`
+--
+
+DROP TABLE IF EXISTS `settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `settings` (
+  `key` varchar(50) NOT NULL,
+  `value` text DEFAULT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `slots`
+--
+
+DROP TABLE IF EXISTS `slots`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `slots` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `day` varchar(20) NOT NULL,
+  `start_time` varchar(10) NOT NULL,
+  `end_time` varchar(10) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `students`
+--
+
+DROP TABLE IF EXISTS `students`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `students` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `department_id` int(11) NOT NULL,
+  `program_id` int(11) NOT NULL,
+  `class_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `department_id` (`department_id`),
+  KEY `program_id` (`program_id`),
+  KEY `class_id` (`class_id`),
+  CONSTRAINT `students_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `students_ibfk_2` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
+  CONSTRAINT `students_ibfk_3` FOREIGN KEY (`program_id`) REFERENCES `programs` (`id`),
+  CONSTRAINT `students_ibfk_4` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `teacher_attendance`
+--
+
+DROP TABLE IF EXISTS `teacher_attendance`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `teacher_attendance` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `timetable_id` int(11) DEFAULT NULL,
+  `date` date DEFAULT NULL,
+  `status` enum('present','absent') DEFAULT 'present',
+  `signed_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_session_date` (`timetable_id`,`date`),
+  CONSTRAINT `teacher_attendance_ibfk_1` FOREIGN KEY (`timetable_id`) REFERENCES `timetable` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `teacher_courses`
+--
+
+DROP TABLE IF EXISTS `teacher_courses`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `teacher_courses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `teacher_id` int(11) DEFAULT NULL,
+  `course_id` int(11) DEFAULT NULL,
+  `class_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `teacher_id` (`teacher_id`),
+  KEY `course_id` (`course_id`),
+  KEY `class_id` (`class_id`),
+  CONSTRAINT `teacher_courses_ibfk_1` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`),
+  CONSTRAINT `teacher_courses_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`),
+  CONSTRAINT `teacher_courses_ibfk_3` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `teachers`
+--
+
+DROP TABLE IF EXISTS `teachers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `teachers` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `name` varchar(100) NOT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `department_id` int(11) DEFAULT NULL,
+  `program_id` int(11) DEFAULT NULL,
+  `room_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `department_id` (`department_id`),
+  KEY `fk_teacher_program` (`program_id`),
+  KEY `fk_teacher_room` (`room_id`),
+  CONSTRAINT `fk_teacher_program` FOREIGN KEY (`program_id`) REFERENCES `programs` (`id`),
+  CONSTRAINT `fk_teacher_room` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`),
+  CONSTRAINT `teachers_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `teachers_ibfk_2` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `timetable`
+--
+
+DROP TABLE IF EXISTS `timetable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `timetable` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `class_id` int(11) DEFAULT NULL,
+  `course_id` int(11) DEFAULT NULL,
+  `teacher_id` int(11) DEFAULT NULL,
+  `room_id` int(11) DEFAULT NULL,
+  `slot_id` int(11) DEFAULT NULL,
+  `semester_id` int(11) DEFAULT NULL,
+  `week_number` int(11) DEFAULT NULL,
+  `date_passage` date DEFAULT NULL,
+  `group_name` varchar(10) DEFAULT NULL,
+  `type` varchar(20) DEFAULT 'CM',
+  PRIMARY KEY (`id`),
+  KEY `class_id` (`class_id`),
+  KEY `course_id` (`course_id`),
+  KEY `teacher_id` (`teacher_id`),
+  KEY `room_id` (`room_id`),
+  KEY `slot_id` (`slot_id`),
+  KEY `semester_id` (`semester_id`),
+  CONSTRAINT `timetable_ibfk_1` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`),
+  CONSTRAINT `timetable_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`),
+  CONSTRAINT `timetable_ibfk_3` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`),
+  CONSTRAINT `timetable_ibfk_4` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`),
+  CONSTRAINT `timetable_ibfk_5` FOREIGN KEY (`slot_id`) REFERENCES `slots` (`id`),
+  CONSTRAINT `timetable_ibfk_6` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` varchar(20) NOT NULL,
+  `full_name` varchar(100) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `avatar` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`)
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
+
+-- Dump completed on 2026-01-24 12:33:54
+
+-- ============================================================
+-- REQUÊTES DE REMPLACEMENT POUR LES VIEWs SUPPRIMÉES
+-- ============================================================
+-- Utilisez ces requêtes dans votre code PHP au lieu des VIEWs
+
+-- Remplace: SELECT * FROM v_teacher_workload
+-- SELECT 
+--     tc.id AS teacher_id,
+--     tc.name AS teacher_name,
+--     COUNT(t.id) AS total_sessions,
+--     SUM(CASE WHEN t.type = 'CM' THEN 1.5 ELSE 1 END) AS estimated_hours
+-- FROM teachers tc
+-- LEFT JOIN timetable t ON tc.id = t.teacher_id
+-- GROUP BY tc.id, tc.name;
+
+-- Remplace: SELECT * FROM v_timetable_details
+-- SELECT 
+--     t.id AS session_id,
+--     c.title AS course_title,
+--     c.code AS course_code,
+--     cl.name AS class_name,
+--     tc.name AS teacher_name,
+--     r.name AS room_name,
+--     s.day AS day,
+--     s.start_time AS start_time,
+--     s.end_time AS end_time,
+--     t.type AS session_type,
+--     t.week_number AS week_number,
+--     t.date_passage AS date_passage
+-- FROM timetable t
+-- JOIN courses c ON t.course_id = c.id
+-- JOIN classes cl ON t.class_id = cl.id
+-- JOIN teachers tc ON t.teacher_id = tc.id
+-- JOIN rooms r ON t.room_id = r.id
+-- JOIN slots s ON t.slot_id = s.id;
+-- Section 3: Améliorations de structure
+-- Database Improvements: Views and Triggers
+
+-- 1. Views
+-- Full Timetable View
+CREATE OR REPLACE VIEW v_timetable_full AS
+SELECT 
+    t.id AS timetable_id,
+    ay.name AS academic_year,
+    sem.name AS semester,
+    d.name AS department,
+    p.name AS program,
+    cl.name AS class_name,
+    c.title AS course_name,
+    c.code AS course_code,
+    tea.name AS teacher_name,
+    r.name AS room_name,
+    s.day,
+    s.start_time,
+    s.end_time,
+    t.type AS session_type
+FROM timetable t
+JOIN semesters sem ON t.semester_id = sem.id
+JOIN academic_years ay ON sem.academic_year_id = ay.id
+JOIN classes cl ON t.class_id = cl.id
+JOIN programs p ON cl.program_id = p.id
+JOIN departments d ON p.department_id = d.id
+JOIN courses c ON t.course_id = c.id
+JOIN teachers tea ON t.teacher_id = tea.id
+JOIN rooms r ON t.room_id = r.id
+JOIN slots s ON t.slot_id = s.id;
+
+-- Teacher Workload View
+CREATE OR REPLACE VIEW v_teacher_workload AS
+SELECT 
+    tea.id AS teacher_id,
+    tea.name AS teacher_name,
+    COUNT(t.id) AS total_sessions
+FROM teachers tea
+LEFT JOIN timetable t ON tea.id = t.teacher_id
+GROUP BY tea.id, tea.name;
+
+-- 2. Triggers
+-- Log deletions from timetable to a history table
+CREATE TABLE IF NOT EXISTS timetable_deleted (
+    id INT,
     class_id INT,
-    FOREIGN KEY(teacher_id) REFERENCES teachers(id),
-    FOREIGN KEY(course_id) REFERENCES courses(id),
-    FOREIGN KEY(class_id) REFERENCES classes(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE rooms (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(50) NOT NULL,
-    capacity INT NOT NULL,
-    is_predefined TINYINT(1) DEFAULT 1
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE slots (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    day VARCHAR(20) NOT NULL,
-    start_time VARCHAR(10) NOT NULL,
-    end_time VARCHAR(10) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE desiderata (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    course_id INT,
     teacher_id INT,
     slot_id INT,
-    semester_id INT,
-    is_preferred TINYINT(1) DEFAULT 1,
-    status VARCHAR(20) DEFAULT 'submitted',
-    FOREIGN KEY(teacher_id) REFERENCES teachers(id),
-    FOREIGN KEY(slot_id) REFERENCES slots(id),
-    FOREIGN KEY(semester_id) REFERENCES semesters(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE timetable (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    class_id INT,
-    course_id INT,
-    teacher_id INT,
     room_id INT,
-    slot_id INT,
     semester_id INT,
-    week_number INT,
-    date_passage DATE,
-    group_name VARCHAR(10),
-    type VARCHAR(20) DEFAULT 'CM',
-    FOREIGN KEY(class_id) REFERENCES classes(id),
-    FOREIGN KEY(course_id) REFERENCES courses(id),
-    FOREIGN KEY(teacher_id) REFERENCES teachers(id),
-    FOREIGN KEY(room_id) REFERENCES rooms(id),
-    FOREIGN KEY(slot_id) REFERENCES slots(id),
-    FOREIGN KEY(semester_id) REFERENCES semesters(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    type VARCHAR(20),
+    deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-CREATE TABLE history (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT,
-    action VARCHAR(50),
-    table_name VARCHAR(50),
-    record_id INT,
-    old_value TEXT,
-    new_value TEXT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+DROP TRIGGER IF EXISTS before_timetable_delete;
+DELIMITER //
+CREATE TRIGGER before_timetable_delete
+BEFORE DELETE ON timetable
+FOR EACH ROW
+BEGIN
+    INSERT INTO timetable_deleted (id, class_id, course_id, teacher_id, slot_id, room_id, semester_id, type)
+    VALUES (OLD.id, OLD.class_id, OLD.course_id, OLD.teacher_id, OLD.slot_id, OLD.room_id, OLD.semester_id, OLD.type);
+END; //
+DELIMITER ;
 
-CREATE TABLE notifications (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT,
-    message TEXT,
-    is_read TINYINT(1) DEFAULT 0,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- Section 4: Fonctionnalités avancées (Vues, Triggers, Procédures)
+-- Database Improvements: Views, Triggers, Transactions and Backup Logic
 
-CREATE TABLE settings (
-    `key` VARCHAR(50) PRIMARY KEY,
-    value TEXT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- 1. RECYCLE BIN FOR DELETED RECORDS
+CREATE TABLE IF NOT EXISTS deleted_records_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    table_name VARCHAR(100),
+    original_id INT,
+    data JSON,
+    deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_by INT
+);
 
-SET FOREIGN_KEY_CHECKS = 1;
+-- 2. VIEWS FOR SIMPLIFIED QUERIES
+-- View for full timetable details
+CREATE OR REPLACE VIEW v_timetable_details AS
+SELECT 
+    t.id AS session_id,
+    c.title AS course_title,
+    c.code AS course_code,
+    cl.name AS class_name,
+    tc.name AS teacher_name,
+    r.name AS room_name,
+    s.day,
+    s.start_time,
+    s.end_time,
+    t.type AS session_type,
+    t.week_number,
+    t.date_passage
+FROM timetable t
+JOIN courses c ON t.course_id = c.id
+JOIN classes cl ON t.class_id = cl.id
+JOIN teachers tc ON t.teacher_id = tc.id
+JOIN rooms r ON t.room_id = r.id
+JOIN slots s ON t.slot_id = s.id;
 
--- Initial Data
-INSERT INTO users (username, password, role, full_name) VALUES ('admin', '$2y$10$yIqcx1TjZg.FzO.p.h.p.e.p.h.p.e.p.h.p.e.p.h.p.e.p.h.p.e', 'admin', 'Administrateur Système');
+-- View for teacher workload
+CREATE OR REPLACE VIEW v_teacher_workload AS
+SELECT 
+    tc.id AS teacher_id,
+    tc.name AS teacher_name,
+    COUNT(t.id) AS total_sessions,
+    SUM(CASE WHEN t.type = 'CM' THEN 1.5 ELSE 1 END) AS estimated_hours -- Assuming CM is 1.5h, others 1h
+FROM teachers tc
+LEFT JOIN timetable t ON tc.id = t.teacher_id
+GROUP BY tc.id, tc.name;
 
-INSERT INTO academic_years (name) VALUES ('2025/2026');
-INSERT INTO semesters (academic_year_id, name) VALUES (1, 'Semestre 1');
-INSERT INTO semesters (academic_year_id, name) VALUES (1, 'Semestre 2');
+-- 3. TRIGGERS
+-- Trigger to log deletion in timetable
+DELIMITER //
+CREATE TRIGGER trg_timetable_after_delete
+AFTER DELETE ON timetable
+FOR EACH ROW
+BEGIN
+    INSERT INTO deleted_records_log (table_name, original_id, data)
+    VALUES ('timetable', OLD.id, JSON_OBJECT(
+        'class_id', OLD.class_id,
+        'course_id', OLD.course_id,
+        'teacher_id', OLD.teacher_id,
+        'room_id', OLD.room_id,
+        'slot_id', OLD.slot_id,
+        'type', OLD.type,
+        'date_passage', OLD.date_passage
+    ));
+END //
+DELIMITER ;
 
-INSERT INTO slots (day, start_time, end_time) VALUES ('Lundi', '08:00', '11:00');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Lundi', '11:30', '14:30');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Lundi', '15:00', '18:00');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Mardi', '08:00', '11:00');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Mardi', '11:30', '14:30');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Mardi', '15:00', '18:00');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Mercredi', '08:00', '11:00');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Mercredi', '11:30', '14:30');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Mercredi', '15:00', '18:00');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Jeudi', '08:00', '11:00');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Jeudi', '11:30', '14:30');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Jeudi', '15:00', '18:00');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Vendredi', '08:00', '11:00');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Vendredi', '11:30', '14:30');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Vendredi', '15:00', '18:00');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Samedi', '08:00', '11:00');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Samedi', '11:30', '14:30');
-INSERT INTO slots (day, start_time, end_time) VALUES ('Samedi', '15:00', '18:00');
+-- 4. STORED PROCEDURES FOR BACKUP & RECOVERY
+DELIMITER //
 
--- =================================================================
--- DONNEES ICTL2 (SEMESTRE 1 2025-2026)
--- =================================================================
+-- Procedure to backup a specific table
+CREATE PROCEDURE sp_backup_table(IN source_table VARCHAR(100))
+BEGIN
+    SET @backup_name = CONCAT('backup_', source_table, '_', DATE_FORMAT(NOW(), '%Y%m%d_%H%i%s'));
+    SET @query = CONCAT('CREATE TABLE ', @backup_name, ' SELECT * FROM ', source_table);
+    PREPARE stmt FROM @query;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+END //
 
--- Departement & Filiere
-INSERT INTO departments (id, name) VALUES (1, 'Informatique');
-INSERT INTO programs (id, department_id, name) VALUES (1, 1, 'ICT4D');
+-- Procedure to recover a table from a backup (example usage)
+-- CALL sp_restore_table('timetable', 'backup_timetable_20231027_120000');
+CREATE PROCEDURE sp_restore_table(IN target_table VARCHAR(100), IN backup_table VARCHAR(100))
+BEGIN
+    -- Drop target if exists (careful!)
+    SET @query1 = CONCAT('DROP TABLE IF EXISTS ', target_table);
+    PREPARE stmt1 FROM @query1;
+    EXECUTE stmt1;
+    DEALLOCATE PREPARE stmt1;
+    
+    -- Restore from backup
+    SET @query2 = CONCAT('CREATE TABLE ', target_table, ' SELECT * FROM ', backup_table);
+    PREPARE stmt2 FROM @query2;
+    EXECUTE stmt2;
+    DEALLOCATE PREPARE stmt2;
+END //
 
--- Classe (ICTL2, Semestre 1)
-INSERT INTO classes (id, program_id, name, size, semester_id) VALUES (1, 1, 'ICTL2', 100, 1);
+DELIMITER ;
 
--- Salles
-INSERT INTO rooms (id, name, capacity) VALUES (1, 'S003', 50);
-INSERT INTO rooms (id, name, capacity) VALUES (2, 'S008', 50);
+-- Section 5: Exemples d'opérations
+-- -- Examples of Database Operations Actions
+-- 
+-- -- 1. View the full timetable with all details
+-- SELECT * FROM v_timetable_details;
+-- 
+-- -- 2. Check teacher workload statistics
+-- SELECT * FROM v_teacher_workload;
+-- 
+-- -- 3. Backup the timetable table before a major change
+-- CALL sp_backup_table('timetable');
+-- 
+-- -- 4. See the list of backups created
+-- SHOW TABLES LIKE 'backup_%';
+-- 
+-- -- 5. Restore the timetable from a backup
+-- -- Replace 'backup_timetable_TIMESTAMP' with an actual table name from step 4
+-- -- CALL sp_restore_table('timetable', 'backup_timetable_20231027_120000');
+-- 
+-- -- 6. View recently deleted sessions (Recycle Bin)
+-- SELECT * FROM deleted_records_log;
+-- 
+-- -- 7. Recovery query: Restore a specific deleted session manually
+-- -- Note: This is an example of how to use the JSON data from deleted_records_log
+-- -- INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, type)
+-- -- SELECT 
+-- --    data->>'$.class_id', 
+-- --    data->>'$.course_id', 
+-- --    data->>'$.teacher_id', 
+-- --    data->>'$.room_id', 
+-- --    data->>'$.slot_id', 
+-- --    data->>'$.type'
+-- -- FROM deleted_records_log WHERE original_id = 21;
+-- 
+-- -- 8. Run a full database backup (Command line)
+-- -- mysqldump -u succes -psucces237 timetable > full_backup.sql
 
--- Enseignants (Comptes utilisateurs & Profils)
--- Note: Admin est ID 1. Les enseignants commencent à ID 2.
-INSERT INTO users (id, username, password, role, full_name) VALUES (2, 'monthe', '$2y$10$s7y/W2V.i5v.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q', 'teacher', 'MONTHE');
-INSERT INTO teachers (id, user_id, name, department_id) VALUES (1, 2, 'MONTHE', 1);
-
-INSERT INTO users (id, username, password, role, full_name) VALUES (3, 'nkouandou', '$2y$10$s7y/W2V.i5v.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q', 'teacher', 'NKOUANDOU');
-INSERT INTO teachers (id, user_id, name, department_id) VALUES (2, 3, 'NKOUANDOU', 1);
-
-INSERT INTO users (id, username, password, role, full_name) VALUES (4, 'nkondock', '$2y$10$s7y/W2V.i5v.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q', 'teacher', 'NKONDOCK');
-INSERT INTO teachers (id, user_id, name, department_id) VALUES (3, 4, 'NKONDOCK', 1);
-
-INSERT INTO users (id, username, password, role, full_name) VALUES (5, 'musima', '$2y$10$s7y/W2V.i5v.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q', 'teacher', 'MUSIMA');
-INSERT INTO teachers (id, user_id, name, department_id) VALUES (4, 5, 'MUSIMA', 1);
-
-INSERT INTO users (id, username, password, role, full_name) VALUES (6, 'biyong', '$2y$10$s7y/W2V.i5v.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q', 'teacher', 'BIYONG');
-INSERT INTO teachers (id, user_id, name, department_id) VALUES (5, 6, 'BIYONG', 1);
-
-INSERT INTO users (id, username, password, role, full_name) VALUES (7, 'eone', '$2y$10$s7y/W2V.i5v.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q', 'teacher', 'EONE');
-INSERT INTO teachers (id, user_id, name, department_id) VALUES (6, 7, 'EONE', 1);
-
-INSERT INTO users (id, username, password, role, full_name) VALUES (8, 'mossebo', '$2y$10$s7y/W2V.i5v.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q', 'teacher', 'MOSSEBO');
-INSERT INTO teachers (id, user_id, name, department_id) VALUES (7, 8, 'MOSSEBO', 1);
-
-INSERT INTO users (id, username, password, role, full_name) VALUES (9, 'videme', '$2y$10$s7y/W2V.i5v.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q', 'teacher', 'VIDEME');
-INSERT INTO teachers (id, user_id, name, department_id) VALUES (8, 9, 'VIDEME', 1);
-
-INSERT INTO users (id, username, password, role, full_name) VALUES (10, 'kwette', '$2y$10$s7y/W2V.i5v.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q', 'teacher', 'KWETTE');
-INSERT INTO teachers (id, user_id, name, department_id) VALUES (9, 10, 'KWETTE', 1);
-
-INSERT INTO users (id, username, password, role, full_name) VALUES (11, 'mbous', '$2y$10$s7y/W2V.i5v.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q', 'teacher', 'MBOUS');
-INSERT INTO teachers (id, user_id, name, department_id) VALUES (10, 11, 'MBOUS', 1);
-
-INSERT INTO users (id, username, password, role, full_name) VALUES (12, 'sevany', '$2y$10$s7y/W2V.i5v.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q', 'teacher', 'SEVANY');
-INSERT INTO teachers (id, user_id, name, department_id) VALUES (11, 12, 'SEVANY', 1);
-
-INSERT INTO users (id, username, password, role, full_name) VALUES (13, 'ekono', '$2y$10$s7y/W2V.i5v.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q.U.q', 'teacher', 'EKONO');
-INSERT INTO teachers (id, user_id, name, department_id) VALUES (12, 13, 'EKONO', 1);
-
--- Cours (Unités d'Enseignement)
-INSERT INTO courses (id, code, title, program_id) VALUES (1, 'ICT207', 'ICT207', 1), (2, 'ICT217', 'ICT217', 1), (3, 'ICT201', 'ICT201', 1), (4, 'ENG203', 'English', 1), (5, 'FRA203', 'Français', 1), (6, 'ICT203', 'ICT203', 1), (7, 'ICT213', 'ICT213', 1), (8, 'ICT215', 'ICT215', 1), (9, 'ICT205', 'ICT205', 1);
-
--- Emploi du temps
--- Lundi
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 1, 1, 1, 2, 1, 'G1');
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 2, 2, 1, 3, 1, 'G1');
--- Mardi
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 1, 1, 2, 4, 1, 'G2');
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 3, 3, 1, 5, 1, 'G1');
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 4, 4, 2, 6, 1, 'G2');
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 5, 5, 1, 6, 1, 'G1');
--- Mercredi
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 6, 6, 2, 7, 1, 'G2');
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 7, 7, 1, 8, 1, 'G1');
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 8, 8, 1, 9, 1, 'G1');
--- Jeudi
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 9, 9, 2, 10, 1, 'G2');
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 8, 10, 2, 11, 1, 'G2');
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 2, 2, 2, 12, 1, 'G2');
--- Vendredi
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 9, 9, 1, 13, 1, 'G1');
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 3, 3, 2, 14, 1, 'G2');
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name, week_number) VALUES (1, 7, 12, 2, 15, 1, 'G2', 1);
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name, week_number) VALUES (1, 5, 5, 2, 15, 1, 'G2', 2);
--- Samedi
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 4, 4, 1, 16, 1, 'G1');
-INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, group_name) VALUES (1, 6, 11, 1, 17, 1, 'G1');
+-- Section 6: Données initiales (Importées de SQLite)
+INSERT INTO users VALUES(1,'admin','$2y$12$Er0boUsqZgX1sq1vFV0XE.gk2NU58vpwLt7IMzhnTVHNeOfw7sLye','admin','Administrateur Système',NULL,NULL,NULL);
+INSERT INTO users VALUES(2,'monthe','$2y$10$WdeOzXGeLC1MD9dYTlJrAOAlpToWNvIMTbNFrDVN5M4hfm3JzuDXW','teacher','MONTHE',NULL,NULL,NULL);
+INSERT INTO users VALUES(3,'eone','$2y$10$WdeOzXGeLC1MD9dYTlJrAOAlpToWNvIMTbNFrDVN5M4hfm3JzuDXW','teacher','EONE',NULL,NULL,NULL);
+INSERT INTO users VALUES(4,'kwette','$2y$10$WdeOzXGeLC1MD9dYTlJrAOAlpToWNvIMTbNFrDVN5M4hfm3JzuDXW','teacher','KWETTE',NULL,NULL,NULL);
+INSERT INTO users VALUES(5,'musima','$2y$10$WdeOzXGeLC1MD9dYTlJrAOAlpToWNvIMTbNFrDVN5M4hfm3JzuDXW','teacher','MUSIMA',NULL,NULL,NULL);
+INSERT INTO users VALUES(6,'nkondock','$2y$10$WdeOzXGeLC1MD9dYTlJrAOAlpToWNvIMTbNFrDVN5M4hfm3JzuDXW','teacher','NKONDOCK',NULL,NULL,NULL);
+INSERT INTO users VALUES(7,'mossebo','$2y$10$WdeOzXGeLC1MD9dYTlJrAOAlpToWNvIMTbNFrDVN5M4hfm3JzuDXW','teacher','MOSSEBO',NULL,NULL,NULL);
+INSERT INTO users VALUES(8,'mbous','$2y$10$WdeOzXGeLC1MD9dYTlJrAOAlpToWNvIMTbNFrDVN5M4hfm3JzuDXW','teacher','MBOUS',NULL,NULL,NULL);
+INSERT INTO users VALUES(9,'sevany','$2y$10$WdeOzXGeLC1MD9dYTlJrAOAlpToWNvIMTbNFrDVN5M4hfm3JzuDXW','teacher','SEVANY',NULL,NULL,NULL);
+INSERT INTO users VALUES(10,'nkouandou','$2y$10$WdeOzXGeLC1MD9dYTlJrAOAlpToWNvIMTbNFrDVN5M4hfm3JzuDXW','teacher','NKOUANDOU',NULL,NULL,NULL);
+INSERT INTO users VALUES(11,'biyong','$2y$10$WdeOzXGeLC1MD9dYTlJrAOAlpToWNvIMTbNFrDVN5M4hfm3JzuDXW','teacher','BIYONG',NULL,NULL,NULL);
+INSERT INTO users VALUES(12,'videme','$2y$10$WdeOzXGeLC1MD9dYTlJrAOAlpToWNvIMTbNFrDVN5M4hfm3JzuDXW','teacher','VIDEME',NULL,NULL,NULL);
+INSERT INTO users VALUES(13,'ekono','$2y$10$WdeOzXGeLC1MD9dYTlJrAOAlpToWNvIMTbNFrDVN5M4hfm3JzuDXW','teacher','EKONO',NULL,NULL,NULL);
+INSERT INTO academic_years VALUES(1,'2025/2026');
+INSERT INTO semesters VALUES(1,1,'Semestre 1');
+INSERT INTO semesters VALUES(2,1,'Semestre 2');
+INSERT INTO departments VALUES(1,'Informatique');
+INSERT INTO departments VALUES(2,'Mathématiques');
+INSERT INTO departments VALUES(3,'Physique');
+INSERT INTO departments VALUES(4,'Chimie');
+INSERT INTO departments VALUES(5,'Biologie Animale');
+INSERT INTO departments VALUES(6,'Biologie Végétale');
+INSERT INTO departments VALUES(7,'Sciences de la Terre');
+INSERT INTO departments VALUES(8,'Biochimie');
+INSERT INTO departments VALUES(9,'Microbiologie');
+INSERT INTO programs VALUES(1,1,'ICT4D');
+INSERT INTO programs VALUES(2,2,'Mathématiques');
+INSERT INTO programs VALUES(3,3,'Physique');
+INSERT INTO programs VALUES(4,4,'Chimie');
+INSERT INTO programs VALUES(5,5,'Biologie Animale');
+INSERT INTO programs VALUES(6,6,'Biologie Végétale');
+INSERT INTO programs VALUES(7,7,'Sciences de la Terre');
+INSERT INTO programs VALUES(8,8,'Biochimie');
+INSERT INTO programs VALUES(9,9,'Microbiologie');
+INSERT INTO classes VALUES(1,1,'ICT4D-L2',120,1);
+INSERT INTO classes VALUES(2,1,'ICT4D-L1',120,1);
+INSERT INTO classes VALUES(3,1,'ICT4D-L3',100,1);
+INSERT INTO classes VALUES(4,1,'ICT4D-M1',50,1);
+INSERT INTO classes VALUES(5,1,'ICT4D-M2',30,1);
+INSERT INTO classes VALUES(6,2,'L1',100,1);
+INSERT INTO classes VALUES(7,2,'L2',90,1);
+INSERT INTO classes VALUES(8,2,'L3',80,1);
+INSERT INTO classes VALUES(9,2,'M1',40,1);
+INSERT INTO classes VALUES(10,2,'M2',20,1);
+INSERT INTO classes VALUES(11,3,'L1',150,1);
+INSERT INTO classes VALUES(12,3,'L2',120,1);
+INSERT INTO classes VALUES(13,3,'L3',100,1);
+INSERT INTO classes VALUES(14,3,'M1',50,1);
+INSERT INTO classes VALUES(15,3,'M2',25,1);
+INSERT INTO classes VALUES(16,4,'L1',140,1);
+INSERT INTO classes VALUES(17,4,'L2',110,1);
+INSERT INTO classes VALUES(18,4,'L3',90,1);
+INSERT INTO classes VALUES(19,4,'M1',45,1);
+INSERT INTO classes VALUES(20,4,'M2',20,1);
+INSERT INTO classes VALUES(21,5,'L1',200,1);
+INSERT INTO classes VALUES(22,5,'L2',180,1);
+INSERT INTO classes VALUES(23,5,'L3',150,1);
+INSERT INTO classes VALUES(24,5,'M1',60,1);
+INSERT INTO classes VALUES(25,5,'M2',30,1);
+INSERT INTO classes VALUES(26,6,'L1',180,1);
+INSERT INTO classes VALUES(27,6,'L2',160,1);
+INSERT INTO classes VALUES(28,6,'L3',140,1);
+INSERT INTO classes VALUES(29,6,'M1',50,1);
+INSERT INTO classes VALUES(30,6,'M2',25,1);
+INSERT INTO classes VALUES(31,7,'L1',100,1);
+INSERT INTO classes VALUES(32,7,'L2',80,1);
+INSERT INTO classes VALUES(33,7,'L3',70,1);
+INSERT INTO classes VALUES(34,7,'M1',30,1);
+INSERT INTO classes VALUES(35,7,'M2',15,1);
+INSERT INTO classes VALUES(36,8,'L1',160,1);
+INSERT INTO classes VALUES(37,8,'L2',140,1);
+INSERT INTO classes VALUES(38,8,'L3',120,1);
+INSERT INTO classes VALUES(39,8,'M1',50,1);
+INSERT INTO classes VALUES(40,8,'M2',25,1);
+INSERT INTO classes VALUES(41,9,'L1',120,1);
+INSERT INTO classes VALUES(42,9,'L2',100,1);
+INSERT INTO classes VALUES(43,9,'L3',90,1);
+INSERT INTO classes VALUES(44,9,'M1',40,1);
+INSERT INTO classes VALUES(45,9,'M2',20,1);
+INSERT INTO teachers VALUES(1,2,'MONTHE',NULL,1,NULL,NULL);
+INSERT INTO teachers VALUES(2,3,'EONE',NULL,1,NULL,NULL);
+INSERT INTO teachers VALUES(3,4,'KWETTE',NULL,1,NULL,NULL);
+INSERT INTO teachers VALUES(4,5,'MUSIMA',NULL,1,NULL,NULL);
+INSERT INTO teachers VALUES(5,6,'NKONDOCK',NULL,1,NULL,NULL);
+INSERT INTO teachers VALUES(6,7,'MOSSEBO',NULL,1,NULL,NULL);
+INSERT INTO teachers VALUES(7,8,'MBOUS',NULL,1,NULL,NULL);
+INSERT INTO teachers VALUES(8,9,'SEVANY',NULL,1,NULL,NULL);
+INSERT INTO teachers VALUES(9,10,'NKOUANDOU',NULL,1,NULL,NULL);
+INSERT INTO teachers VALUES(10,11,'BIYONG',NULL,1,NULL,NULL);
+INSERT INTO teachers VALUES(11,12,'VIDEME',NULL,1,NULL,NULL);
+INSERT INTO teachers VALUES(12,13,'EKONO',NULL,1,NULL,NULL);
+INSERT INTO courses VALUES(1,'ICT207','UE ICT207',1);
+INSERT INTO courses VALUES(2,'ICT203','UE ICT203',1);
+INSERT INTO courses VALUES(3,'ICT205','UE ICT205',1);
+INSERT INTO courses VALUES(4,'ENG203','UE ENG203',1);
+INSERT INTO courses VALUES(5,'ICT201','UE ICT201',1);
+INSERT INTO courses VALUES(6,'ICT213','UE ICT213',1);
+INSERT INTO courses VALUES(7,'ICT215','UE ICT215',1);
+INSERT INTO courses VALUES(8,'ICT217','UE ICT217',1);
+INSERT INTO courses VALUES(9,'FRA203','UE FRA203',1);
+INSERT INTO rooms VALUES(1,'S003',200,1);
+INSERT INTO rooms VALUES(2,'S008',200,1);
+INSERT INTO slots VALUES(1,'Lundi','08:00','11:00');
+INSERT INTO slots VALUES(2,'Lundi','11:30','14:30');
+INSERT INTO slots VALUES(3,'Lundi','15:00','18:00');
+INSERT INTO slots VALUES(4,'Mardi','08:00','11:00');
+INSERT INTO slots VALUES(5,'Mardi','11:30','14:30');
+INSERT INTO slots VALUES(6,'Mardi','15:00','18:00');
+INSERT INTO slots VALUES(7,'Mercredi','08:00','11:00');
+INSERT INTO slots VALUES(8,'Mercredi','11:30','14:30');
+INSERT INTO slots VALUES(9,'Mercredi','15:00','18:00');
+INSERT INTO slots VALUES(10,'Jeudi','08:00','11:00');
+INSERT INTO slots VALUES(11,'Jeudi','11:30','14:30');
+INSERT INTO slots VALUES(12,'Jeudi','15:00','18:00');
+INSERT INTO slots VALUES(13,'Vendredi','08:00','11:00');
+INSERT INTO slots VALUES(14,'Vendredi','11:30','14:30');
+INSERT INTO slots VALUES(15,'Vendredi','15:00','18:00');
+INSERT INTO slots VALUES(16,'Samedi','08:00','11:00');
+INSERT INTO slots VALUES(17,'Samedi','11:30','14:30');
+INSERT INTO slots VALUES(18,'Samedi','15:00','18:00');
+INSERT INTO timetable VALUES(1,1,1,1,1,2,1,NULL,NULL,'G1','Cours');
+INSERT INTO timetable VALUES(2,1,1,1,1,4,1,NULL,NULL,'G2','Cours');
+INSERT INTO timetable VALUES(3,1,2,2,1,7,1,NULL,NULL,'G2','Cours');
+INSERT INTO timetable VALUES(4,1,4,4,2,16,1,NULL,NULL,'G1','Cours');
+INSERT INTO settings VALUES('preference_deadline','2026-12-31');
+INSERT INTO sqlite_sequence VALUES('users',13);
+INSERT INTO sqlite_sequence VALUES('academic_years',1);
+INSERT INTO sqlite_sequence VALUES('semesters',2);
+INSERT INTO sqlite_sequence VALUES('slots',18);
+INSERT INTO sqlite_sequence VALUES('departments',9);
+INSERT INTO sqlite_sequence VALUES('programs',9);
+INSERT INTO sqlite_sequence VALUES('classes',45);
+INSERT INTO sqlite_sequence VALUES('teachers',12);
+INSERT INTO sqlite_sequence VALUES('courses',9);
+INSERT INTO sqlite_sequence VALUES('rooms',2);
+INSERT INTO sqlite_sequence VALUES('timetable',4);
