@@ -68,23 +68,23 @@ require_once '../../includes/header.php';
     </form>
 
     <!-- Liste des salles -->
-    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+    <table class="table">
         <thead>
-            <tr style="background-color: #f8f9fa;">
-                <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">ID</th>
-                <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">Nom</th>
-                <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">Capacité</th>
-                <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">Actions</th>
+            <tr>
+                <th>ID</th>
+                <th>Nom</th>
+                <th>Capacité</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             <?php foreach ($rooms as $room): ?>
             <tr>
-                <td style="padding: 12px; border-bottom: 1px solid #eee;"><?php echo $room['id']; ?></td>
-                <td style="padding: 12px; border-bottom: 1px solid #eee;"><strong><?php echo htmlspecialchars($room['name']); ?></strong></td>
-                <td style="padding: 12px; border-bottom: 1px solid #eee;"><?php echo $room['capacity']; ?> places</td>
-                <td style="padding: 12px; border-bottom: 1px solid #eee;">
-                    <a href="?delete=<?php echo $room['id']; ?>" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette salle ?');" style="color: #dc3545; text-decoration: none; font-size: 0.9rem;">Supprimer</a>
+                <td><?php echo $room['id']; ?></td>
+                <td><strong><?php echo htmlspecialchars($room['name']); ?></strong></td>
+                <td><?php echo $room['capacity']; ?> places</td>
+                <td>
+                    <a href="?delete=<?php echo $room['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette salle ?');">Supprimer</a>
                 </td>
             </tr>
             <?php endforeach; ?>

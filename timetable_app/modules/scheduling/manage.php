@@ -44,6 +44,9 @@ if (isset($_POST['add_entry'])) {
         $stmt->execute([$slot_id, $room_id, $teacher_id, $class_id, $group_name, $semester_id, $week_number, $week_number]);
         if ($stmt->fetch()) {
             $error = "Conflit détecté : La salle, l'enseignant ou la classe est déjà occupé sur ce créneau.";
+            if ($role === 'admin') {
+                $error .= " <a href='../rooms/index.php' style='color: #842029; text-decoration: underline;'>Créer une nouvelle salle ?</a>";
+            }
         } else {
             // Room capacity vs Class size check
             $stmt = $pdo->prepare("SELECT size FROM classes WHERE id = ?");
@@ -259,20 +262,25 @@ require_once __DIR__ . '/../../includes/header.php';
     <?php if ($error): ?><div class="alert alert-danger" style="color: red; margin-bottom: 1rem;"><?php echo $error; ?></div><?php endif; ?>
 
     <?php if ($role === 'admin'): ?>
-    <form method="GET" style="background:#f8f9fa; padding:10px; margin-bottom:20px; display:flex; gap:10px; border-radius: 8px;">
-        <select name="class_id">
-            <option value="">-- Toutes les classes --</option>
-            <?php foreach($classes as $c) echo "<option value='{$c['id']}' ".($filter_class==$c['id']?'selected':'').">{$c['name']}</option>"; ?>
-        </select>
-        <select name="teacher_id">
-            <option value="">-- Tous les enseignants --</option>
-            <?php foreach($teachers as $t) echo "<option value='{$t['id']}' ".($filter_teacher==$t['id']?'selected':'').">{$t['name']}</option>"; ?>
-        </select>
-        <button type="submit" class="btn btn-primary">Filtrer</button>
-        <?php if(!empty($highlight_ids)): ?>
-            <div style="margin-left:auto; color:#dc3545; font-weight:bold;">Mode Résolution de Conflit</div>
-        <?php endif; ?>
-    </form>
+    <div style="display: flex; gap: 1rem; margin-bottom: 20px;">
+        <form method="GET" style="background:#f8f9fa; padding:10px; flex: 1; display:flex; gap:10px; border-radius: 8px;">
+            <select name="class_id">
+                <option value="">-- Toutes les classes --</option>
+                <?php foreach($classes as $c) echo "<option value='{$c['id']}' ".($filter_class==$c['id']?'selected':'').">{$c['name']}</option>"; ?>
+            </select>
+            <select name="teacher_id">
+                <option value="">-- Tous les enseignants --</option>
+                <?php foreach($teachers as $t) echo "<option value='{$t['id']}' ".($filter_teacher==$t['id']?'selected':'').">{$t['name']}</option>"; ?>
+            </select>
+            <button type="submit" class="btn btn-primary">Filtrer</button>
+            <?php if(!empty($highlight_ids)): ?>
+                <div style="margin-left:auto; color:#dc3545; font-weight:bold;">Mode Résolution de Conflit</div>
+            <?php endif; ?>
+        </form>
+        <a href="catchup.php" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.5rem;">
+            <span>📋</span> Demandes & Propositions
+        </a>
+    </div>
     <?php endif; ?>
 
     <h3>Affectations <?php echo $role === 'teacher' ? 'personnelles' : 'actuelles'; ?></h3>
@@ -322,16 +330,26 @@ require_once __DIR__ . '/../../includes/header.php';
                 </select>
             </div>
             <div class="form-group"><label>Filière (Program)</label>
-                <select id="admin_prog" class="form-control" onchange="filterClasses(this.value)">
-                    <option value="">-- Toutes les filières --</option>
-                    <?php foreach($programs as $p) echo "<option value='{$p['id']}' data-dept='{$p['department_id']}' ".($prefill_prog == $p['id'] ? 'selected' : '').">{$p['name']}</option>"; ?>
-                </select>
+                <input list="prog_list" id="prog_search" class="form-control" placeholder="Rechercher une filière..." value="<?php 
+                    foreach($programs as $p) {
+                        if($p['id'] == $prefill_prog) { echo htmlspecialchars($p['name']); break; }
+                    }
+                ?>">
+                <datalist id="prog_list">
+                    <?php foreach($programs as $p) echo "<option value='".htmlspecialchars($p['name'])."' data-id='{$p['id']}' data-dept='{$p['department_id']}'>"; ?>
+                </datalist>
+                <input type="hidden" id="admin_prog" value="<?php echo $prefill_prog; ?>">
             </div>
             <div class="form-group"><label>Classe / Niveau</label>
-                <select name="class_id" id="admin_class" class="form-control" required>
-                    <option value="">-- Choisir la classe --</option>
-                    <?php foreach($classes as $c) echo "<option value='{$c['id']}' data-prog='{$c['program_id']}' ".($filter_class == $c['id'] ? 'selected' : '').">{$c['name']}</option>"; ?>
-                </select>
+                <input list="class_list" id="class_search" class="form-control" placeholder="Rechercher une classe..." required value="<?php 
+                    foreach($classes as $c) {
+                        if($c['id'] == $filter_class) { echo htmlspecialchars($c['name']); break; }
+                    }
+                ?>">
+                <datalist id="class_list">
+                    <?php foreach($classes as $c) echo "<option value='".htmlspecialchars($c['name'])."' data-id='{$c['id']}' data-prog='{$c['program_id']}'>"; ?>
+                </datalist>
+                <input type="hidden" name="class_id" id="admin_class" value="<?php echo $filter_class; ?>">
             </div>
             <div class="form-group"><label>Type de session</label>
                 <select name="type" class="form-control" required>
@@ -345,16 +363,40 @@ require_once __DIR__ . '/../../includes/header.php';
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
             <div class="form-group"><label>Groupe</label><input type="text" name="group_name" class="form-control" placeholder="G1, G2 ou laisse vide"></div>
             <div class="form-group"><label>Semaine</label><input type="number" name="week_number" class="form-control" placeholder="Numéro de semaine (optionnel)"></div>
-            <div class="form-group"><label>UE (Cours)</label><select name="course_id" class="form-control" required><?php foreach($courses as $c) echo "<option value='{$c['id']}'>{$c['code']} - {$c['title']}</option>"; ?></select></div>
+            <div class="form-group"><label>UE (Cours)</label>
+                <input list="course_list" id="course_search" class="form-control" placeholder="Rechercher une UE..." required>
+                <datalist id="course_list">
+                    <?php foreach($courses as $c) echo "<option value='".htmlspecialchars($c['code'] . " - " . $c['title'])."' data-id='{$c['id']}'>"; ?>
+                </datalist>
+                <input type="hidden" name="course_id" id="course_id_hidden">
+            </div>
             
             <?php if ($role === 'admin'): ?>
-                <div class="form-group"><label>Enseignant</label><select name="teacher_id" class="form-control" required><?php foreach($teachers as $t) echo "<option value='{$t['id']}'>{$t['name']}</option>"; ?></select></div>
+                <div class="form-group"><label>Enseignant</label>
+                    <input list="teacher_list" id="teacher_search" class="form-control" placeholder="Rechercher un enseignant..." required>
+                    <datalist id="teacher_list">
+                        <?php foreach($teachers as $t) echo "<option value='".htmlspecialchars($t['name'])."' data-id='{$t['id']}'>"; ?>
+                    </datalist>
+                    <input type="hidden" name="teacher_id" id="teacher_id_hidden">
+                </div>
             <?php else: ?>
                 <input type="hidden" name="teacher_id" value="<?php echo $current_teacher_id; ?>">
                 <div class="form-group"><label>Enseignant</label><input type="text" class="form-control" value="<?php echo htmlspecialchars($_SESSION['full_name']); ?>" disabled></div>
             <?php endif; ?>
 
-            <div class="form-group"><label>Salle</label><select name="room_id" class="form-control" required><?php foreach($rooms as $r) echo "<option value='{$r['id']}'>{$r['name']} (Cap: {$r['capacity']})</option>"; ?></select></div>
+            <div class="form-group"><label>Salle</label>
+                <input list="rooms_list" id="room_search" class="form-control" placeholder="Rechercher une salle..." required value="<?php 
+                    if(isset($_POST['room_id'])) {
+                        foreach($rooms as $r) {
+                            if($r['id'] == $_POST['room_id']) { echo htmlspecialchars($r['name']); break; }
+                        }
+                    }
+                ?>">
+                <datalist id="rooms_list">
+                    <?php foreach($rooms as $r) echo "<option value='".htmlspecialchars($r['name'])."' data-id='{$r['id']}'>Cap: {$r['capacity']}</option>"; ?>
+                </datalist>
+                <input type="hidden" name="room_id" id="room_id_hidden" value="<?php echo $_POST['room_id'] ?? ''; ?>">
+            </div>
             <div class="form-group"><label>Date</label><input type="date" name="date_passage" class="form-control"></div>
             <div class="form-group"><label>Créneau</label><select name="slot_id" class="form-control" required><?php foreach($slots as $s) echo "<option value='{$s['id']}'>{$s['day']} {$s['start_time']}-{$s['end_time']}</option>"; ?></select></div>
         </div>
@@ -364,37 +406,99 @@ require_once __DIR__ . '/../../includes/header.php';
 </div>
 
 <script>
+function syncDatalist(inputId, listId, hiddenId, callback) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    const hidden = document.getElementById(hiddenId);
+
+    input.addEventListener('input', function() {
+        let foundId = '';
+        for (let opt of list.options) {
+            if (opt.value === input.value) {
+                foundId = opt.dataset.id;
+                break;
+            }
+        }
+        hidden.value = foundId;
+        if (callback) callback(foundId);
+    });
+}
+
+// Store original options for filtering
+const allProgOptions = Array.from(document.getElementById('prog_list').options).map(opt => ({
+    value: opt.value,
+    id: opt.dataset.id,
+    dept: opt.dataset.dept
+}));
+
+const allClassOptions = Array.from(document.getElementById('class_list').options).map(opt => ({
+    value: opt.value,
+    id: opt.dataset.id,
+    prog: opt.dataset.prog
+}));
+
 function filterPrograms(deptId) {
-    const progSelect = document.getElementById('admin_prog');
-    const progs = progSelect.querySelectorAll('option');
-    progSelect.value = '';
-    filterClasses(''); // Reset classes too
+    const progList = document.getElementById('prog_list');
+    const progSearch = document.getElementById('prog_search');
+    const progHidden = document.getElementById('admin_prog');
     
-    progs.forEach(opt => {
-        if (!deptId || opt.value === '' || opt.dataset.dept === deptId) {
-            opt.style.display = '';
-        } else {
-            opt.style.display = 'none';
+    // Clear current selection if not matching new dept
+    if (progHidden.value) {
+        const currentProg = allProgOptions.find(p => p.id === progHidden.value);
+        if (deptId && currentProg && currentProg.dept !== deptId) {
+            progSearch.value = '';
+            progHidden.value = '';
+            filterClasses('');
+        }
+    }
+
+    progList.innerHTML = '';
+    allProgOptions.forEach(opt => {
+        if (!deptId || opt.dept === deptId) {
+            const o = document.createElement('option');
+            o.value = opt.value;
+            o.dataset.id = opt.id;
+            o.dataset.dept = opt.dept;
+            progList.appendChild(o);
         }
     });
 }
 
 function filterClasses(progId) {
-    const classSelect = document.getElementById('admin_class');
-    const classes = classSelect.querySelectorAll('option');
-    // Don't reset if it's the initial load with prefill
-    if (!progId) classSelect.value = '';
-    
-    classes.forEach(opt => {
-        if (!progId || opt.value === '' || opt.dataset.prog === progId) {
-            opt.style.display = '';
-        } else {
-            opt.style.display = 'none';
+    const classList = document.getElementById('class_list');
+    const classSearch = document.getElementById('class_search');
+    const classHidden = document.getElementById('admin_class');
+
+    // Clear current selection if not matching new prog
+    if (classHidden.value) {
+        const currentClass = allClassOptions.find(c => c.id === classHidden.value);
+        if (progId && currentClass && currentClass.prog !== progId) {
+            classSearch.value = '';
+            classHidden.value = '';
+        }
+    }
+
+    classList.innerHTML = '';
+    allClassOptions.forEach(opt => {
+        if (!progId || opt.prog === progId) {
+            const o = document.createElement('option');
+            o.value = opt.value;
+            o.dataset.id = opt.id;
+            o.dataset.prog = opt.prog;
+            classList.appendChild(o);
         }
     });
 }
 
 function initFilters() {
+    syncDatalist('room_search', 'rooms_list', 'room_id_hidden');
+    syncDatalist('prog_search', 'prog_list', 'admin_prog', filterClasses);
+    syncDatalist('class_search', 'class_list', 'admin_class');
+    syncDatalist('course_search', 'course_list', 'course_id_hidden');
+    if (document.getElementById('teacher_search')) {
+        syncDatalist('teacher_search', 'teacher_list', 'teacher_id_hidden');
+    }
+
     const deptId = document.getElementById('admin_dept').value;
     const progId = document.getElementById('admin_prog').value;
     if (deptId) filterPrograms(deptId);

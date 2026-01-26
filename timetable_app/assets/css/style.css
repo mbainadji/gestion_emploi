@@ -398,7 +398,48 @@ tr:hover td {
 .link-card:hover {
     transform: translateY(-8px);
     box-shadow: var(--shadow-lg);
-    border-color: var(--primary);
+}
+
+/* DataList Style */
+.datalist-input {
+    position: relative;
+}
+
+.datalist-input input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+}
+
+.datalist-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 var(--radius) var(--radius);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: var(--shadow-md);
+    display: none;
+}
+
+.datalist-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.datalist-item:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.datalist-item.active {
+    background: var(--primary);
+    color: white;
 }
 
 .link-card h3 { 

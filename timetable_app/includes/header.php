@@ -43,6 +43,7 @@ if (isLoggedIn()) {
                     <li><a href="<?php echo BASE_URL; ?>/modules/reports/stats.php">Statistiques</a></li>
                 <?php elseif (hasRole('teacher')): ?>
                     <li><a href="<?php echo BASE_URL; ?>/modules/scheduling/manage.php">Mes Cours</a></li>
+                    <li><a href="<?php echo BASE_URL; ?>/modules/scheduling/teacher_schedule_request.php">Soumettre Planning</a></li>
                     <li><a href="<?php echo BASE_URL; ?>/modules/scheduling/attendance.php">Émargement</a></li>
                 <?php endif; ?>
                 <li>

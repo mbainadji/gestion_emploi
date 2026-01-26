@@ -58,21 +58,21 @@ if ($role === 'admin') {
         if ($req && $req['status'] === 'pending') {
             // Move to timetable
             $stmt = $pdo->prepare("INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, type) VALUES (?, ?, ?, ?, ?, 1, ?)");
-            $stmt->execute([$req['class_id'], $req['course_id'], $req['teacher_id'], $req['room_id'], $req['slot_id'], $req['session_type']]);
+            $stmt->execute([$req['class_id'], $req['course_id'], $req['teacher_id'], $req['room_id'], $req['slot_id'], $req['session_type'] ?? 'Cours']);
             
             $stmt = $pdo->prepare("UPDATE catchup_requests SET status = 'approved' WHERE id = ?");
             $stmt->execute([$id]);
             $message = "Demande approuvée et ajoutée à l'emploi du temps.";
 
             // Notify Teacher and Students
-            $notif_msg = "Votre demande (" . ($req['request_type'] === 'proposal' ? 'Proposition' : 'Rattrapage') . ") pour " . $req['class_id'] . " a été approuvée.";
+            $notif_msg = "Votre demande (" . (($req['request_type'] ?? 'catchup') === 'proposal' ? 'Proposition' : 'Rattrapage') . ") pour " . $req['class_id'] . " a été approuvée.";
             $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES ((SELECT user_id FROM teachers WHERE id = ?), ?)")->execute([$req['teacher_id'], $notif_msg]);
 
             $students_stmt = $pdo->prepare("SELECT user_id FROM students WHERE class_id = ?");
             $students_stmt->execute([$req['class_id']]);
             $students = $students_stmt->fetchAll();
             foreach ($students as $student) {
-                $student_msg = "Changement d'emploi du temps pour votre classe (" . $req['session_type'] . "). Consultez votre planning.";
+                $student_msg = "Changement d'emploi du temps pour votre classe (" . ($req['session_type'] ?? 'Cours') . "). Consultez votre planning.";
                 $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)")->execute([$student['user_id'], $student_msg]);
             }
         }
@@ -87,7 +87,7 @@ if ($role === 'admin') {
         $stmt->execute([$id]);
         $req = $stmt->fetch();
         if ($req) {
-            $notif_msg = "Votre " . ($req['request_type'] === 'proposal' ? 'proposition' : 'demande de rattrapage') . " a été refusée.";
+            $notif_msg = "Votre " . (($req['request_type'] ?? 'catchup') === 'proposal' ? 'proposition' : 'demande de rattrapage') . " a été refusée.";
             $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES ((SELECT user_id FROM teachers WHERE id = ?), ?)")->execute([$req['teacher_id'], $notif_msg]);
         }
     }
@@ -157,15 +157,19 @@ require_once __DIR__ . '/../../includes/header.php';
                 </div>
                 <div class="form-group">
                     <label>UE</label>
-                    <select name="course_id" class="form-control" required>
-                        <?php foreach($courses as $c) echo "<option value='{$c['id']}'>{$c['code']} - {$c['title']}</option>"; ?>
-                    </select>
+                    <input list="course_list" id="course_search" class="form-control" placeholder="Rechercher une UE..." required>
+                    <datalist id="course_list">
+                        <?php foreach($courses as $c) echo "<option value='".htmlspecialchars($c['code'] . " - " . $c['title'])."' data-id='{$c['id']}'>"; ?>
+                    </datalist>
+                    <input type="hidden" name="course_id" id="course_id_hidden">
                 </div>
                 <div class="form-group">
                     <label>Classe</label>
-                    <select name="class_id" class="form-control" required>
-                        <?php foreach($classes as $c) echo "<option value='{$c['id']}'>{$c['name']}</option>"; ?>
-                    </select>
+                    <input list="class_list" id="class_search" class="form-control" placeholder="Rechercher une classe..." required>
+                    <datalist id="class_list">
+                        <?php foreach($classes as $c) echo "<option value='".htmlspecialchars($c['name'])."' data-id='{$c['id']}'>"; ?>
+                    </datalist>
+                    <input type="hidden" name="class_id" id="class_id_hidden">
                 </div>
                 <div class="form-group">
                     <label>Créneau souhaité</label>
@@ -175,9 +179,11 @@ require_once __DIR__ . '/../../includes/header.php';
                 </div>
                 <div class="form-group">
                     <label>Salle</label>
-                    <select name="room_id" class="form-control" required>
-                        <?php foreach($rooms as $r) echo "<option value='{$r['id']}'>{$r['name']}</option>"; ?>
-                    </select>
+                    <input list="rooms_list" id="room_search" class="form-control" placeholder="Rechercher une salle..." required>
+                    <datalist id="rooms_list">
+                        <?php foreach($rooms as $r) echo "<option value='".htmlspecialchars($r['name'])."' data-id='{$r['id']}'>"; ?>
+                    </datalist>
+                    <input type="hidden" name="room_id" id="room_id_hidden">
                 </div>
             </div>
             <div class="form-group" style="margin-top: 1rem;">
@@ -223,8 +229,8 @@ require_once __DIR__ . '/../../includes/header.php';
             <?php foreach($requests as $r): ?>
                 <tr>
                     <td>
-                        <span class="badge" style="background: <?php echo $r['request_type'] === 'proposal' ? '#007bff' : '#6f42c1'; ?>; color: white;">
-                            <?php echo $r['request_type'] === 'proposal' ? 'Proposition' : 'Rattrapage'; ?>
+                        <span class="badge" style="background: <?php echo ($r['request_type'] ?? 'catchup') === 'proposal' ? '#007bff' : '#6f42c1'; ?>; color: white;">
+                            <?php echo ($r['request_type'] ?? 'catchup') === 'proposal' ? 'Proposition' : 'Rattrapage'; ?>
                         </span>
                     </td>
                     <td><?php echo htmlspecialchars($r['teacher_name']); ?></td>
@@ -257,5 +263,32 @@ require_once __DIR__ . '/../../includes/header.php';
         </tbody>
     </table>
 </div>
+
+<script>
+function syncDatalist(inputId, listId, hiddenId) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    const hidden = document.getElementById(hiddenId);
+
+    if (!input || !list || !hidden) return;
+
+    input.addEventListener('input', function() {
+        let foundId = '';
+        for (let opt of list.options) {
+            if (opt.value === input.value) {
+                foundId = opt.dataset.id;
+                break;
+            }
+        }
+        hidden.value = foundId;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    syncDatalist('course_search', 'course_list', 'course_id_hidden');
+    syncDatalist('class_search', 'class_list', 'class_id_hidden');
+    syncDatalist('room_search', 'rooms_list', 'room_id_hidden');
+});
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
