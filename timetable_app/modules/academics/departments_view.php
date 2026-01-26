@@ -76,27 +76,41 @@ require_once __DIR__ . '/../../includes/header.php';
 
     <?php elseif ($step === 'level'): ?>
         <h2>Niveaux de formation</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
-            <?php 
-            $fixed_levels = ['L1', 'L2', 'L3', 'M1', 'M2'];
-            foreach ($fixed_levels as $level): 
-                // Find if a class exists for this level (e.g. ICT4D-L1 or just L1)
-                $found_class = null;
-                foreach($classes as $c) {
-                    if (strpos($c['name'], $level) !== false) {
-                        $found_class = $c;
-                        break;
-                    }
-                }
-            ?>
-                <a href="/modules/views/view.php?department_id=<?php echo $dept_id; ?>&program_id=<?php echo $program_id; ?>&class_id=<?php echo $found_class ? $found_class['id'] : ''; ?>" 
-                   class="card" style="text-decoration: none; border: 1px solid var(--border); text-align: center; padding: 1.5rem; <?php echo !$found_class ? 'opacity: 0.5; pointer-events: none;' : ''; ?>">
-                    <div style="font-weight: 800; font-size: 1.5rem; color: var(--primary);"><?php echo $level; ?></div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
-                        <?php echo $found_class ? 'Voir l\'emploi du temps' : 'Non disponible'; ?>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+            <?php if (empty($classes)): ?>
+                <div class="card" style="grid-column: 1/-1; text-align: center; padding: 3rem; border: 2px dashed var(--border);">
+                    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Aucune classe/niveau n'est encore configuré pour cette filière.</p>
+                    <?php if (hasRole('admin')): ?>
+                        <a href="<?php echo BASE_URL; ?>/modules/academics/manage.php" class="btn btn-primary">Configurer les classes</a>
+                    <?php endif; ?>
+                </div>
+            <?php else: ?>
+                <?php foreach ($classes as $c): ?>
+                    <?php
+                    // Check if timetable entries exist for this class
+                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM timetable WHERE class_id = ?");
+                    $stmt->execute([$c['id']]);
+                    $has_timetable = $stmt->fetchColumn() > 0;
+                    ?>
+                    <div class="card" style="text-decoration: none; border: 1px solid var(--border); text-align: center; padding: 1.5rem;">
+                        <div style="font-weight: 800; font-size: 1.5rem; color: var(--primary); margin-bottom: 0.5rem;"><?php echo htmlspecialchars($c['name']); ?></div>
+                        
+                        <?php if ($has_timetable): ?>
+                            <a href="<?php echo BASE_URL; ?>/modules/views/view.php?department_id=<?php echo $dept_id; ?>&program_id=<?php echo $program_id; ?>&class_id=<?php echo $c['id']; ?>" 
+                               class="btn btn-primary" style="font-size: 0.8rem; width: 100%;">Voir l'emploi du temps</a>
+                        <?php else: ?>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Aucun cours programmé</div>
+                            <?php if (hasRole('admin')): ?>
+                                <a href="<?php echo BASE_URL; ?>/modules/scheduling/manage.php?class_id=<?php echo $c['id']; ?>" 
+                                   class="btn btn-success" style="font-size: 0.8rem; width: 100%;">Créer l'emploi du temps</a>
+                            <?php elseif (hasRole('teacher')): ?>
+                                <a href="<?php echo BASE_URL; ?>/modules/scheduling/catchup.php" 
+                                   class="btn btn-secondary" style="font-size: 0.8rem; width: 100%;">Soumettre un cours</a>
+                            <?php endif; ?>
+                        <?php endif; ?>
                     </div>
-                </a>
-            <?php endforeach; ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 </div>
