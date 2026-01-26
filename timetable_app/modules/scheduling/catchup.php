@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($conflict) {
             $error = "La salle est déjà occupée sur ce créneau.";
+            $show_quick_add = true;
         } else {
             // If teacher, they can directly schedule TD/TP for their courses if admin allowed (not specified, but keeping existing logic)
             // But if it's a "proposal" or "catchup" explicitly marked as such, we use the requests table
@@ -42,36 +43,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($new_room_name) && $new_room_cap > 0) {
             $stmt = $pdo->prepare("INSERT INTO rooms (name, capacity) VALUES (?, ?)");
             $stmt->execute([$new_room_name, $new_room_cap]);
-            $message = "Nouvelle salle '$new_room_name' ajoutée avec succès.";
+            $message = "Nouvelle salle '$new_room_name' ajoutée avec succès. Vous pouvez maintenant la sélectionner.";
         }
     }
 }
 
-if ($role === 'admin' && isset($_POST['approve_id'])) {
-    $id = $_POST['approve_id'];
-    $stmt = $pdo->prepare("SELECT * FROM catchup_requests WHERE id = ?");
-    $stmt->execute([$id]);
-    $req = $stmt->fetch();
-
-    if ($req) {
-        // Move to timetable
-        $stmt = $pdo->prepare("INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, type) VALUES (?, ?, ?, ?, ?, 1, ?)");
-        $stmt->execute([$req['class_id'], $req['course_id'], $req['teacher_id'], $req['room_id'], $req['slot_id'], $req['session_type']]);
-        
-        $stmt = $pdo->prepare("UPDATE catchup_requests SET status = 'approved' WHERE id = ?");
+if ($role === 'admin') {
+    if (isset($_POST['approve_id'])) {
+        $id = $_POST['approve_id'];
+        $stmt = $pdo->prepare("SELECT * FROM catchup_requests WHERE id = ?");
         $stmt->execute([$id]);
-        $message = "Demande approuvée et ajoutée à l'emploi du temps.";
+        $req = $stmt->fetch();
 
-        // Notify Teacher and Students
-        $notif_msg = "Votre demande de rattrapage pour " . $req['class_id'] . " a été approuvée.";
-        $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES ((SELECT user_id FROM teachers WHERE id = ?), ?)")->execute([$req['teacher_id'], $notif_msg]);
+        if ($req && $req['status'] === 'pending') {
+            // Move to timetable
+            $stmt = $pdo->prepare("INSERT INTO timetable (class_id, course_id, teacher_id, room_id, slot_id, semester_id, type) VALUES (?, ?, ?, ?, ?, 1, ?)");
+            $stmt->execute([$req['class_id'], $req['course_id'], $req['teacher_id'], $req['room_id'], $req['slot_id'], $req['session_type']]);
+            
+            $stmt = $pdo->prepare("UPDATE catchup_requests SET status = 'approved' WHERE id = ?");
+            $stmt->execute([$id]);
+            $message = "Demande approuvée et ajoutée à l'emploi du temps.";
 
-        $students_stmt = $pdo->prepare("SELECT user_id FROM students WHERE class_id = ?");
-        $students_stmt->execute([$req['class_id']]);
-        $students = $students_stmt->fetchAll();
-        foreach ($students as $student) {
-            $student_msg = "Rattrapage confirmé pour votre classe. Consultez votre emploi du temps.";
-            $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)")->execute([$student['user_id'], $student_msg]);
+            // Notify Teacher and Students
+            $notif_msg = "Votre demande (" . ($req['request_type'] === 'proposal' ? 'Proposition' : 'Rattrapage') . ") pour " . $req['class_id'] . " a été approuvée.";
+            $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES ((SELECT user_id FROM teachers WHERE id = ?), ?)")->execute([$req['teacher_id'], $notif_msg]);
+
+            $students_stmt = $pdo->prepare("SELECT user_id FROM students WHERE class_id = ?");
+            $students_stmt->execute([$req['class_id']]);
+            $students = $students_stmt->fetchAll();
+            foreach ($students as $student) {
+                $student_msg = "Changement d'emploi du temps pour votre classe (" . $req['session_type'] . "). Consultez votre planning.";
+                $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)")->execute([$student['user_id'], $student_msg]);
+            }
+        }
+    } elseif (isset($_POST['reject_id'])) {
+        $id = $_POST['reject_id'];
+        $stmt = $pdo->prepare("UPDATE catchup_requests SET status = 'rejected' WHERE id = ?");
+        $stmt->execute([$id]);
+        $message = "Demande rejetée.";
+        
+        // Notify Teacher
+        $stmt = $pdo->prepare("SELECT teacher_id, request_type FROM catchup_requests WHERE id = ?");
+        $stmt->execute([$id]);
+        $req = $stmt->fetch();
+        if ($req) {
+            $notif_msg = "Votre " . ($req['request_type'] === 'proposal' ? 'proposition' : 'demande de rattrapage') . " a été refusée.";
+            $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES ((SELECT user_id FROM teachers WHERE id = ?), ?)")->execute([$req['teacher_id'], $notif_msg]);
         }
     }
 }
@@ -170,20 +187,22 @@ require_once __DIR__ . '/../../includes/header.php';
             <button type="submit" name="request_catchup" class="btn btn-primary" style="margin-top: 1rem;">Envoyer la demande</button>
         </form>
 
+        <?php if (isset($show_quick_add) && $show_quick_add): ?>
         <hr style="margin: 2rem 0;">
         <h4>Résoudre un conflit de salle ?</h4>
         <p style="font-size: 0.9rem; color: #666;">Si aucune salle n'est disponible, vous pouvez en ajouter une rapidement (soumis à validation administrative ultérieure).</p>
         <form method="POST" style="display: flex; gap: 1rem; align-items: flex-end;">
             <div class="form-group">
                 <label>Nom de la salle</label>
-                <input type="text" name="new_room_name" class="form-control" placeholder="Ex: Salle de réunion">
+                <input type="text" name="new_room_name" class="form-control" placeholder="Ex: Salle de réunion" required>
             </div>
             <div class="form-group">
                 <label>Capacité</label>
-                <input type="number" name="new_room_cap" class="form-control" value="30">
+                <input type="number" name="new_room_cap" class="form-control" value="30" required>
             </div>
             <button type="submit" name="quick_add_room" class="btn btn-secondary">Ajouter Salle</button>
         </form>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
 
@@ -219,10 +238,16 @@ require_once __DIR__ . '/../../includes/header.php';
                     </td>
                     <?php if ($role === 'admin' && $r['status'] === 'pending'): ?>
                         <td>
-                            <form method="POST">
-                                <input type="hidden" name="approve_id" value="<?php echo $r['id']; ?>">
-                                <button type="submit" class="btn btn-success btn-sm">Approuver</button>
-                            </form>
+                            <div style="display: flex; gap: 5px;">
+                                <form method="POST">
+                                    <input type="hidden" name="approve_id" value="<?php echo $r['id']; ?>">
+                                    <button type="submit" class="btn btn-success btn-sm">Approuver</button>
+                                </form>
+                                <form method="POST">
+                                    <input type="hidden" name="reject_id" value="<?php echo $r['id']; ?>">
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Refuser cette demande ?')">Rejeter</button>
+                                </form>
+                            </div>
                         </td>
                     <?php elseif ($role === 'admin'): ?>
                         <td>-</td>

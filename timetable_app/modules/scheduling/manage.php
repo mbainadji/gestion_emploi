@@ -203,6 +203,27 @@ $teachers = $pdo->query("SELECT * FROM teachers ORDER BY name")->fetchAll();
 $rooms = $pdo->query("SELECT * FROM rooms ORDER BY name")->fetchAll();
 $slots = $pdo->query("SELECT * FROM slots ORDER BY id")->fetchAll();
 
+// Fetch Names for Breadcrumbs
+$breadcrumb_dept = null;
+$breadcrumb_prog = null;
+$breadcrumb_class = null;
+
+if ($prefill_dept) {
+    $stmt = $pdo->prepare("SELECT name FROM departments WHERE id = ?");
+    $stmt->execute([$prefill_dept]);
+    $breadcrumb_dept = $stmt->fetchColumn();
+}
+if ($prefill_prog) {
+    $stmt = $pdo->prepare("SELECT name FROM programs WHERE id = ?");
+    $stmt->execute([$prefill_prog]);
+    $breadcrumb_prog = $stmt->fetchColumn();
+}
+if ($filter_class) {
+    $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
+    $stmt->execute([$filter_class]);
+    $breadcrumb_class = $stmt->fetchColumn();
+}
+
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 <style>
@@ -213,6 +234,26 @@ require_once __DIR__ . '/../../includes/header.php';
 </style>
 
 <div class="card">
+    <nav style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+        <a href="../academics/departments_view.php" style="color: var(--primary); font-weight: 600;">Départements</a>
+        <?php if ($breadcrumb_dept): ?>
+            <span style="margin: 0 0.5rem;">/</span>
+            <a href="../academics/departments_view.php?step=program&dept_id=<?php echo $prefill_dept; ?>" style="color: var(--primary); font-weight: 600;">
+                <?php echo htmlspecialchars($breadcrumb_dept); ?>
+            </a>
+        <?php endif; ?>
+        <?php if ($breadcrumb_prog): ?>
+            <span style="margin: 0 0.5rem;">/</span>
+            <a href="../academics/departments_view.php?step=level&dept_id=<?php echo $prefill_dept; ?>&program_id=<?php echo $prefill_prog; ?>" style="color: var(--primary); font-weight: 600;">
+                <?php echo htmlspecialchars($breadcrumb_prog); ?>
+            </a>
+        <?php endif; ?>
+        <?php if ($breadcrumb_class): ?>
+            <span style="margin: 0 0.5rem;">/</span>
+            <span style="font-weight: 600;"><?php echo htmlspecialchars($breadcrumb_class); ?></span>
+        <?php endif; ?>
+    </nav>
+
     <h2>Gestion des Emplois du Temps</h2>
     <?php if ($message): ?><div class="alert alert-success" style="color: green; margin-bottom: 1rem;"><?php echo $message; ?></div><?php endif; ?>
     <?php if ($error): ?><div class="alert alert-danger" style="color: red; margin-bottom: 1rem;"><?php echo $error; ?></div><?php endif; ?>

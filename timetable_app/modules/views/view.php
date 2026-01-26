@@ -115,10 +115,51 @@ foreach ($timetable_entries as $entry) {
 $days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 $time_slots = $pdo->query("SELECT DISTINCT start_time, end_time FROM slots ORDER BY start_time")->fetchAll();
 
+// Fetch Names for Breadcrumbs
+$breadcrumb_dept = null;
+$breadcrumb_prog = null;
+$breadcrumb_class = null;
+
+if ($selected_dept) {
+    $stmt = $pdo->prepare("SELECT name FROM departments WHERE id = ?");
+    $stmt->execute([$selected_dept]);
+    $breadcrumb_dept = $stmt->fetchColumn();
+}
+if ($selected_program) {
+    $stmt = $pdo->prepare("SELECT name FROM programs WHERE id = ?");
+    $stmt->execute([$selected_program]);
+    $breadcrumb_prog = $stmt->fetchColumn();
+}
+if ($selected_class) {
+    $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
+    $stmt->execute([$selected_class]);
+    $breadcrumb_class = $stmt->fetchColumn();
+}
+
 require_once '../../includes/header.php';
 ?>
 
 <div class="card">
+    <nav style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+        <a href="../academics/departments_view.php" style="color: var(--primary); font-weight: 600;">Départements</a>
+        <?php if ($breadcrumb_dept): ?>
+            <span style="margin: 0 0.5rem;">/</span>
+            <a href="../academics/departments_view.php?step=program&dept_id=<?php echo $selected_dept; ?>" style="color: var(--primary); font-weight: 600;">
+                <?php echo htmlspecialchars($breadcrumb_dept); ?>
+            </a>
+        <?php endif; ?>
+        <?php if ($breadcrumb_prog): ?>
+            <span style="margin: 0 0.5rem;">/</span>
+            <a href="../academics/departments_view.php?step=level&dept_id=<?php echo $selected_dept; ?>&program_id=<?php echo $selected_program; ?>" style="color: var(--primary); font-weight: 600;">
+                <?php echo htmlspecialchars($breadcrumb_prog); ?>
+            </a>
+        <?php endif; ?>
+        <?php if ($breadcrumb_class): ?>
+            <span style="margin: 0 0.5rem;">/</span>
+            <span style="font-weight: 600;"><?php echo htmlspecialchars($breadcrumb_class); ?></span>
+        <?php endif; ?>
+    </nav>
+
     <h1 style="margin-bottom: 1.5rem;">Consultation de l'Emploi du Temps</h1>
     
     <?php if ($role !== 'student'): ?>
