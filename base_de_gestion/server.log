@@ -1,0 +1,21 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm.
+
+> base_de_gestion@1.0.0 dev
+> ts-node-dev --respawn --transpile-only src/index.ts
+
+[INFO] 12:11:10 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.9.3)
+[dotenv@17.2.3] injecting env (5) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+Server is running on port 3000
+Error connecting to the database: Error: getaddrinfo ENOTFOUND db
+    at Object.createConnectionPromise [as createConnection] (/home/succeskamalah/Documents/Travail/gestion_Emploi/base_de_gestion/node_modules/mysql2/promise.js:19:31)
+    at testConnection (/home/succeskamalah/Documents/Travail/gestion_Emploi/base_de_gestion/src/index.ts:25:36)
+    at Server.<anonymous> (/home/succeskamalah/Documents/Travail/gestion_Emploi/base_de_gestion/src/index.ts:50:3)
+    at Server.f (/home/succeskamalah/Documents/Travail/gestion_Emploi/base_de_gestion/node_modules/once/once.js:25:25)
+    at Object.onceWrapper (node:events:638:28)
+    at Server.emit (node:events:536:35)
+    at emitListeningNT (node:net:1945:10)
+    at processTicksAndRejections (node:internal/process/task_queues:81:21) {
+  code: 'ENOTFOUND',
+  errno: -3008,
+  sqlState: undefined
+}

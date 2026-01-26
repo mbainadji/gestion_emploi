@@ -1,0 +1,9 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm.
+
+> base_de_gestion@1.0.0 dev
+> ts-node-dev --respawn --transpile-only src/index.ts
+
+[INFO] 12:15:14 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.9.3)
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+Server is running on port 3000
+Successfully connected to the database
